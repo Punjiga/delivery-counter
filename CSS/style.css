@@ -1,20 +1,20 @@
 :root {
-    /* Paleta de Colores Profesional (Azul y Gris) */
     --color-principal: #6cbed1;
-    /* Azul Fuerte */
-    --color-fondo: #f1f5f9;
-    /* Gris muy suave para el fondo */
+    /* Identidad creativa */
+    --color-fondo: #f4f6f8;
+    /* Base profesional */
     --color-blanco: #ffffff;
-    --color-texto: #1e293b;
-    /* Texto oscuro casi negro */
-    --color-texto-suave: #64748b;
-    /* Texto gris para detalles */
-    --color-borde: #cbd5e1;
-    /* Bordes sutiles */
-    --color-peligro: #ef4444;
-    /* Rojo para borrar */
-    --color-exito: #10b981;
-    /* Verde para dinero */
+    /* Claridad visual */
+    --color-texto: #2c3e50;
+    /* Autoridad corporativa */
+    --color-texto-suave: #607d8b;
+    /* Detalles sutiles */
+    --color-borde: #dce1e6;
+    /* Estructura limpia */
+    --color-peligro: #e74c3c;
+    /* Alerta crítica */
+    --color-exito: #2ecc71;
+    /* Resultado positivo */
 }
 
 * {
