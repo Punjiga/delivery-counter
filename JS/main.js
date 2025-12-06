@@ -5,12 +5,18 @@ let listaViajes = [];
 let fechaVisualizacion = new Date(); // Fecha de referencia para el mes que se está VIENDO
 let semanaActual = 'todas'; // 'todas', 1, 2, 3, 4, 5
 const STORAGE_KEY = 'datosConductor_v4';
+let listaGastos = [];
+const STORAGE_KEY_GASTOS = 'datosConductor_v4_gastos';
 
 // 2. Inicialización
 window.onload = function () {
     const datosGuardados = localStorage.getItem(STORAGE_KEY);
     if (datosGuardados) {
         listaViajes = JSON.parse(datosGuardados);
+    }
+    const gastosGuardados = localStorage.getItem(STORAGE_KEY_GASTOS);
+    if (gastosGuardados) {
+        listaGastos = JSON.parse(gastosGuardados);
     }
 
     // Asegurar que fechaVisualizacion empiece en el mes actual real
@@ -29,6 +35,7 @@ window.onload = function () {
 
 function guardar() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(listaViajes));
+    localStorage.setItem(STORAGE_KEY_GASTOS, JSON.stringify(listaGastos));
     calcularTotales();
 }
 
@@ -65,21 +72,39 @@ function actualizarEncabezadoMes() {
     actualizarBotonesSemana(nombreMes);
 }
 
-function actualizarBotonesSemana(nombreMes) {
+function getTextoRangoSemana(semana, nombreMes = '') {
+    // Si no tenemos nombreMes, lo sacamos de la fecha actual
+    if (!nombreMes) {
+        nombreMes = fechaVisualizacion.toLocaleDateString('es-ES', { month: 'long' });
+    }
+
+    // Capitalizar
+    const nombreMesCap = nombreMes.charAt(0).toUpperCase() + nombreMes.slice(1);
+    const shortMonth = nombreMesCap.substring(0, 3) + '.'; // Ene. Feb.
+
     const year = fechaVisualizacion.getFullYear();
     const mesIndex = fechaVisualizacion.getMonth();
-    // Obtener último día del mes (28, 29, 30, 31)
     const ultimoDia = new Date(year, mesIndex + 1, 0).getDate();
 
+    if (semana === 'todas') return `(Mes Completo: ${nombreMesCap})`;
+
+    const sem = parseInt(semana);
+    if (sem === 1) return `(1-7 ${shortMonth})`;
+    if (sem === 2) return `(8-14 ${shortMonth})`;
+    if (sem === 3) return `(15-21 ${shortMonth})`;
+    if (sem === 4) return `(22-${ultimoDia} ${shortMonth})`;
+    return '';
+}
+
+function actualizarBotonesSemana(nombreMes) {
     const botones = document.querySelectorAll('.boton-semana');
     const dropdown = document.getElementById('selectorSemanaMobile');
-    const shortMonth = nombreMes.substring(0, 3) + '.'; // Ene. Feb.
 
     // Textos
-    const txtSem1 = `Semana 1 (1-7 ${shortMonth})`;
-    const txtSem2 = `Semana 2 (8-14 ${shortMonth})`;
-    const txtSem3 = `Semana 3 (15-21 ${shortMonth})`;
-    const txtSem4 = `Semana 4 (22-${ultimoDia} ${shortMonth})`;
+    const txtSem1 = `Semana 1 ${getTextoRangoSemana(1, nombreMes)}`;
+    const txtSem2 = `Semana 2 ${getTextoRangoSemana(2, nombreMes)}`;
+    const txtSem3 = `Semana 3 ${getTextoRangoSemana(3, nombreMes)}`;
+    const txtSem4 = `Semana 4 ${getTextoRangoSemana(4, nombreMes)}`;
 
     // Actualizar Botones Desktop
     if (botones[0]) botones[0].innerText = txtSem1;
@@ -136,27 +161,58 @@ function getSemanaDelMes(fechaStr) {
 
 // 5. Gestión de Viajes
 function agregarViaje() {
-    // Por defecto hoy
-    const hoy = new Date();
-    const fechaStr = hoy.toISOString().split('T')[0];
+    Swal.fire({
+        title: 'Nuevo Viaje',
+        html: `
+            <input type="date" id="swal-fecha-viaje" class="swal2-input" value="${new Date().toISOString().split('T')[0]}">
+            <input type="text" id="swal-cliente" class="swal2-input" placeholder="Cliente / Destino">
+            <input type="number" id="swal-precio" class="swal2-input" placeholder="Precio (₡)">
+            <input type="number" step="0.1" id="swal-km" class="swal2-input" placeholder="Distancia (km)">
+        `,
+        focusConfirm: false,
+        showCancelButton: true,
+        confirmButtonText: 'Guardar',
+        cancelButtonText: 'Cancelar',
+        preConfirm: () => {
+            return {
+                fecha: document.getElementById('swal-fecha-viaje').value,
+                cliente: document.getElementById('swal-cliente').value,
+                precio: document.getElementById('swal-precio').value,
+                km: document.getElementById('swal-km').value
+            }
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const data = result.value;
+            if (!data.fecha) return;
 
-    // Asegurar que estamos viendo el mes donde agregamos el viaje?
-    // O simplemente agregarlo. Si agrego un viaje HOY pero estoy viendo hace 3 meses, no se verá.
-    // Lo lógico es mover la vista a HOY al agregar.
-    irAlMesActual();
+            // Determinar tipoFechaUI
+            const d = new Date(data.fecha + 'T00:00:00');
+            const hoy = new Date();
+            const ayer = new Date(); ayer.setDate(ayer.getDate() - 1);
 
-    const nuevoViaje = {
-        id: Date.now(),
-        fecha: fechaStr,
-        cliente: '',
-        precio: 0,
-        km: 0,
-        tipoFechaUI: 'hoy' // 'hoy', 'ayer', 'custom' - para persistir el estado del dropdown
-    };
+            let tipoFechaUI = 'custom';
+            if (d.toDateString() === hoy.toDateString()) tipoFechaUI = 'hoy';
+            else if (d.toDateString() === ayer.toDateString()) tipoFechaUI = 'ayer';
 
-    listaViajes.push(nuevoViaje);
-    actualizarVista();
-    guardar();
+            const nuevoViaje = {
+                id: Date.now(),
+                fecha: data.fecha,
+                cliente: data.cliente || '',
+                precio: parseFloat(data.precio) || 0,
+                km: parseFloat(data.km) || 0,
+                tipoFechaUI: tipoFechaUI
+            };
+
+            listaViajes.push(nuevoViaje);
+
+            // Si la fecha seleccionada es del mes actual o diferente, 
+            // actualizamos la vista actual. Si el usuario agregó una fecha 
+            // de otro mes, no se verá hasta que cambie de mes.
+            actualizarVista();
+            guardar();
+        }
+    });
 }
 
 window.borrarViaje = function (id) {
@@ -226,6 +282,70 @@ window.actualizarDato = function (id, campo, valor) {
     }
 };
 
+window.borrarGasto = function (id) {
+    Swal.fire({
+        text: '¿Eliminar este gasto?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        confirmButtonText: 'Eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            listaGastos = listaGastos.filter(g => g.id !== id);
+            actualizarVista(); // Re-render everything
+            guardar();
+        }
+    });
+};
+
+function agregarGasto() {
+    Swal.fire({
+        title: 'Registrar Gasto',
+        html: `
+            <input type="date" id="swal-fecha" class="swal2-input" value="${new Date().toISOString().split('T')[0]}">
+            <select id="swal-tipo" class="swal2-input">
+                <option value="Gasolina">⛽ Gasolina</option>
+                <option value="Mantenimiento">🔧 Mantenimiento</option>
+                <option value="Comida">🍔 Comida</option>
+                <option value="Otro">📝 Otro</option>
+            </select>
+            <input type="text" id="swal-desc" class="swal2-input" placeholder="Descripción (opcional)">
+            <input type="number" id="swal-monto" class="swal2-input" placeholder="Monto (₡)">
+        `,
+        focusConfirm: false,
+        showCancelButton: true,
+        confirmButtonText: 'Guardar',
+        cancelButtonText: 'Cancelar',
+        preConfirm: () => {
+            return {
+                fecha: document.getElementById('swal-fecha').value,
+                tipo: document.getElementById('swal-tipo').value,
+                descripcion: document.getElementById('swal-desc').value,
+                monto: document.getElementById('swal-monto').value
+            }
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const data = result.value;
+            if (!data.monto || !data.fecha) return;
+
+            const nuevoGasto = {
+                id: Date.now(),
+                fecha: data.fecha,
+                tipo: data.tipo,
+                descripcion: data.descripcion || data.tipo,
+                monto: parseFloat(data.monto)
+            };
+
+            listaGastos.push(nuevoGasto);
+            // Si la fecha del gasto no es del mes visible, ¿aviso o cambio de vista?
+            // Por simplicidad, dejamos que el usuario navegue. Pero idealmente refrescamos si es fecha actual.
+            actualizarVista();
+            guardar();
+        }
+    });
+}
 
 // 6. Renderizado
 function actualizarVista() {
@@ -320,15 +440,64 @@ function actualizarVista() {
     }
 
     calcularTotales(viajesFiltrados);
+    renderizarGastos(); // Renderizar gastos también
+}
+
+function renderizarGastos() {
+    const cuerpoTabla = document.getElementById('cuerpoTablaGastos');
+    const mensajeVacio = document.getElementById('mensajeGastosVacio');
+    if (!cuerpoTabla) return;
+
+    // Filtros (Mismos que viajes)
+    const mesVisto = fechaVisualizacion.getMonth();
+    const anioVisto = fechaVisualizacion.getFullYear();
+
+    let gastosFiltrados = listaGastos.filter(g => {
+        const d = new Date(g.fecha + 'T00:00:00');
+        return d.getMonth() === mesVisto && d.getFullYear() === anioVisto;
+    });
+
+    if (semanaActual !== 'todas') {
+        gastosFiltrados = gastosFiltrados.filter(g => getSemanaDelMes(g.fecha) === semanaActual);
+    }
+
+    gastosFiltrados.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+
+    cuerpoTabla.innerHTML = '';
+
+    if (gastosFiltrados.length === 0) {
+        mensajeVacio.style.display = 'block';
+    } else {
+        mensajeVacio.style.display = 'none';
+        gastosFiltrados.forEach(gasto => {
+            const fila = document.createElement('tr');
+            // Formato fecha simple
+            const fechaFmt = new Date(gasto.fecha + 'T00:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+
+            fila.innerHTML = `
+                <td data-label="Fecha">${fechaFmt}</td>
+                <td data-label="Tipo">${gasto.tipo}</td>
+                <td data-label="Descripción">${gasto.descripcion}</td>
+                <td data-label="Monto">₡ ${gasto.monto.toLocaleString('es-CR')}</td>
+                <td data-label="Acción" style="text-align: center;">
+                    <button class="boton-borrar" onclick="borrarGasto(${gasto.id})" style="width:32px; height:32px; font-size: 0.8rem;">
+                        X
+                    </button>
+                </td>
+            `;
+            cuerpoTabla.appendChild(fila);
+        });
+    }
 }
 
 // 7. Cálculos
 function calcularTotales(viajesYaFiltrados) {
-    // Si no pasamos argumentos, recalculamos filtrando de nuevo (útil para cuando carga la página)
+    // 1. Filtrar Viajes (Ingresos)
     let viajes = viajesYaFiltrados;
+    const mesVisto = fechaVisualizacion.getMonth();
+    const anioVisto = fechaVisualizacion.getFullYear();
+
     if (!viajes) {
-        const mesVisto = fechaVisualizacion.getMonth();
-        const anioVisto = fechaVisualizacion.getFullYear();
         viajes = listaViajes.filter(v => {
             const d = new Date(v.fecha + 'T00:00:00');
             return d.getMonth() === mesVisto && d.getFullYear() === anioVisto;
@@ -338,40 +507,73 @@ function calcularTotales(viajesYaFiltrados) {
         }
     }
 
-    // Totales de la VISTA ACTUAL
-    const totalDinero = viajes.reduce((sum, v) => sum + (v.precio || 0), 0);
-    const totalKm = viajes.reduce((sum, v) => sum + (v.km || 0), 0);
-
-    document.getElementById('totalVistaDinero').innerText = '₡ ' + totalDinero.toLocaleString('es-CR');
-    document.getElementById('totalVistaKm').innerText = totalKm.toFixed(1) + ' km';
-
-    // Actualizar Título de Totales
-    const tituloTotalVista = document.querySelector('.tarjeta-total.semana .titulo-tarjeta');
-    if (tituloTotalVista) {
-        if (semanaActual === 'todas') tituloTotalVista.innerText = "TOTAL VISTA ACTUAL";
-        else tituloTotalVista.innerText = `TOTAL SEMANA ${semanaActual}`;
-    }
-
-    // Totales del MES COMPLETO (independiente de la semana vista)
-    const mesVisto = fechaVisualizacion.getMonth();
-    const anioVisto = fechaVisualizacion.getFullYear();
-    const viajesMes = listaViajes.filter(v => {
-        const d = new Date(v.fecha + 'T00:00:00');
+    // 2. Filtrar Gastos (Egresos) - Misma lógica de filtro
+    let gastos = listaGastos.filter(g => {
+        const d = new Date(g.fecha + 'T00:00:00');
         return d.getMonth() === mesVisto && d.getFullYear() === anioVisto;
     });
+    if (semanaActual !== 'todas') {
+        gastos = gastos.filter(g => getSemanaDelMes(g.fecha) === semanaActual);
+    }
 
-    const totalMesDinero = viajesMes.reduce((sum, v) => sum + (v.precio || 0), 0);
-    const totalMesKm = viajesMes.reduce((sum, v) => sum + (v.km || 0), 0);
+    // 3. Calcular Sumas
+    const totalIngresos = viajes.reduce((sum, v) => sum + (v.precio || 0), 0);
+    const totalKm = viajes.reduce((sum, v) => sum + (v.km || 0), 0);
+    const totalGastos = gastos.reduce((sum, g) => sum + (g.monto || 0), 0);
+    const gananciaNeta = totalIngresos - totalGastos;
 
-    document.getElementById('totalMesDinero').innerText = '₡ ' + totalMesDinero.toLocaleString('es-CR');
-    document.getElementById('totalMesKm').innerText = totalMesKm.toFixed(1) + ' km';
+    // 4. Actualizar DOM
+    document.getElementById('totalVistaDinero').innerText = '₡ ' + totalIngresos.toLocaleString('es-CR');
+    document.getElementById('totalVistaKm').innerText = totalKm.toFixed(1) + ' km';
+
+    const elGastos = document.getElementById('totalVistaGastos');
+    if (elGastos) elGastos.innerText = '₡ ' + totalGastos.toLocaleString('es-CR');
+
+    // Ganancia Neta: Color Exito (Verde) si positivo, Peligro (Rojo) si negativo
+    const elGanancia = document.getElementById('totalVistaGanancia');
+    if (elGanancia) {
+        elGanancia.innerText = '₡ ' + gananciaNeta.toLocaleString('es-CR');
+        // Usar verde para ganancia (exito), rojo para perdida (peligro)
+        elGanancia.style.color = gananciaNeta >= 0 ? 'var(--color-exito)' : 'var(--color-peligro)';
+
+        // También actualizar el borde de la tarjeta de ganancia para que coincida
+        const tarjetaGanancia = elGanancia.closest('.tarjeta-total');
+        if (tarjetaGanancia) {
+            tarjetaGanancia.style.borderLeftColor = gananciaNeta >= 0 ? 'var(--color-exito)' : 'var(--color-peligro)';
+        }
+    }
+
+    // Actualizar Títulos de Totales con Rangos Dinámicos
+    const rangoTexto = getTextoRangoSemana(semanaActual);
+
+    // Título Ingresos
+    const tituloIngresos = document.getElementById('tituloIngresos');
+    if (tituloIngresos) {
+        tituloIngresos.innerText = `Ingresos ${rangoTexto}`;
+    } else {
+        // Fallback por si no encuentra el ID (versión anterior HTML)
+        const tituloTotalVista = document.querySelector('.tarjeta-total.semana .titulo-tarjeta');
+        if (tituloTotalVista) tituloTotalVista.innerText = `Ingresos ${rangoTexto}`;
+    }
+
+    // Título Gastos
+    const tituloGastos = document.getElementById('tituloGastos');
+    if (tituloGastos) {
+        tituloGastos.innerText = `Gastos ${rangoTexto}`;
+    }
+
+    // Título Ganancia Neta
+    const tituloGanancia = document.getElementById('tituloGanancia');
+    if (tituloGanancia) {
+        tituloGanancia.innerText = `Ganancia Neta ${rangoTexto}`;
+    }
 
     renderizarTotalesDiarios(viajes);
 
-    // Botón PDF
+    // Botón PDF logic
     const botonPDF = document.querySelector('.boton-pdf');
     if (botonPDF) {
-        const hayDatos = viajes.some(v => v.precio > 0 && v.cliente);
+        const hayDatos = (viajes.length > 0) || (gastos.length > 0);
         botonPDF.disabled = !hayDatos;
     }
 }
@@ -382,40 +584,52 @@ function renderizarTotalesDiarios(viajes) {
     contenedorDias.innerHTML = '';
 
     // Agrupar por día de la semana
-    // Queremos mostrar: Lunes: X, Martes: Y...
     const diasSemana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
-    // Inicializar acumuladores
+    // Inicializar acumuladores con lista de fechas
     const totalesDias = {};
-    diasSemana.forEach(d => totalesDias[d] = { dinero: 0, km: 0, count: 0 });
+    diasSemana.forEach(d => totalesDias[d] = { dinero: 0, km: 0, count: 0, fechas: [] });
 
     viajes.forEach(v => {
         const d = new Date(v.fecha + 'T00:00:00');
         const nombreDia = d.toLocaleDateString('es-ES', { weekday: 'long' });
         const nombreCapitalizado = nombreDia.charAt(0).toUpperCase() + nombreDia.slice(1);
 
-        // Mapear nombres si varian (tildes etc)
-        // toLocaleDateString devuelve 'miércoles', 'sábado' con tilde.
         if (totalesDias[nombreCapitalizado]) {
             totalesDias[nombreCapitalizado].dinero += (v.precio || 0);
             totalesDias[nombreCapitalizado].km += (v.km || 0);
             totalesDias[nombreCapitalizado].count++;
+            // Guardar fecha única
+            if (!totalesDias[nombreCapitalizado].fechas.includes(v.fecha)) {
+                totalesDias[nombreCapitalizado].fechas.push(v.fecha);
+            }
         }
     });
 
     // Renderizar tarjetas solo para días con datos
     diasSemana.forEach(dia => {
         if (totalesDias[dia].count > 0) {
-            // Clases de colores
             const mapaClases = {
                 'Lunes': 'dia-Lunes', 'Martes': 'dia-Martes', 'Miércoles': 'dia-Miercoles',
                 'Jueves': 'dia-Jueves', 'Viernes': 'dia-Viernes', 'Sábado': 'dia-Sabado', 'Domingo': 'dia-Domingo'
             };
 
+            // Crear texto de fechas (ej: "4 Dic." o "4, 11 Dic.")
+            const fechasTexto = totalesDias[dia].fechas.map(f => {
+                const dateObj = new Date(f + 'T00:00:00');
+                const texto = dateObj.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+                // Capitalizar mes
+                const partes = texto.split(' ');
+                if (partes.length > 1) {
+                    partes[1] = partes[1].charAt(0).toUpperCase() + partes[1].slice(1);
+                }
+                return partes.join(' ');
+            }).join(', ');
+
             const tarjeta = document.createElement('div');
             tarjeta.className = `tarjeta-total dia ${mapaClases[dia] || ''} fade-in`;
             tarjeta.innerHTML = `
-                <div class="titulo-tarjeta">Total ${dia}</div>
+                <div class="titulo-tarjeta">Total ${dia} (${fechasTexto})</div>
                 <div class="valor-dinero">₡ ${totalesDias[dia].dinero.toLocaleString('es-CR')}</div>
                 <div class="valor-km">${totalesDias[dia].km.toFixed(1)} km</div>
             `;
@@ -425,15 +639,49 @@ function renderizarTotalesDiarios(viajes) {
 }
 
 function generarPDF() {
-    // Para el PDF, idealmemnte mostrar TODO el mes o lo que se ve?
-    // User logic: "Descargar Reporte PDF". Usualmente es lo que se ve.
-    // Pero si quieren reporte mensual, mejor cambiar a 'todas' temporalmente como antes.
-    const vistaOriginal = semanaActual;
-    cambiarSemana('todas');
+    // Preguntar si incluir gastos
+    Swal.fire({
+        title: 'Generar Reporte PDF',
+        text: "¿Deseas incluir la tabla de gastos en el reporte?",
+        icon: 'question',
+        showDenyButton: true,
+        showCancelButton: true,
+        confirmButtonText: 'Sí, incluir gastos',
+        denyButtonText: 'No, solo viajes',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isDismissed) return; // Cancelado
 
-    setTimeout(() => {
-        window.print();
-        // Restaurar si se desea:
-        // cambiarSemana(vistaOriginal); 
-    }, 500);
+        const incluirGastos = result.isConfirmed;
+        const vistaOriginal = semanaActual;
+
+        // Cambiar a vista completa para reporte
+        cambiarSemana('todas');
+
+        // Manejar visibilidad de gastos usando IDs
+        const containerGastos = document.querySelector('.gastos-contenedor');
+        const cardGastos = document.getElementById('cardGastos');
+        const cardGanancia = document.getElementById('cardGanancia');
+
+        // Si NO incluye gastos, ocultamos cosas
+        if (!incluirGastos) {
+            if (containerGastos) containerGastos.style.display = 'none';
+            if (cardGastos) cardGastos.style.display = 'none';
+            if (cardGanancia) cardGanancia.style.display = 'none';
+        }
+
+        setTimeout(() => {
+            window.print();
+
+            // Restaurar visibilidad
+            if (!incluirGastos) {
+                if (containerGastos) containerGastos.style.display = 'block';
+                if (cardGastos) cardGastos.style.display = 'block';
+                if (cardGanancia) cardGanancia.style.display = 'block';
+
+                // Forzar re-calculo para asegurar estilos correctos
+                calcularTotales();
+            }
+        }, 500);
+    });
 }
