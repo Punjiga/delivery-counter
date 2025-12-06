@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Registro - Delivery</title>
+    <link rel="stylesheet" href="./CSS/style.css">
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="shortcut icon" href="./assets/logo.ico" type="image/x-icon">
+    <link rel="stylesheet" href="./assets/logo.png" type="image/png">
+</head>
+
+<body>
+    <div class="contenedor-principal">
+        <!-- Encabezado -->
+        <header>
+            <div class="titulo-seccion">
+                <h1 id="tituloMes" style="margin: 0; font-size: 2rem; text-transform: capitalize;">Noviembre 2025</h1>
+                <div class="navegacion-mes" style="display: flex; gap: 10px; align-items: center;">
+                    <button class="boton-nav-mes" onclick="cambiarMes(-1)" title="Mes Anterior">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                    </button>
+                    <button class="boton-nav-mes" onclick="cambiarMes(1)" title="Mes Siguiente">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                    </button>
+                    <button class="boton-nav-today" onclick="irAlMesActual()" title="Ir al Mes Actual"
+                        style="padding: 5px 10px; border-radius: 8px; border: 1px solid var(--color-borde); background: var(--color-fondo-tarjeta); cursor: pointer; color: var(--color-texto);">
+                        Hoy
+                    </button>
+                </div>
+            </div>
+            <div class="avisos-wrapper">
+                <div class="aviso-tarifa">
+                    ⚠️ >400m: +80₡ cada 100m extra
+                    <span class="info-icon-container">
+                        <span class="info-icon">ℹ️</span>
+                        <div class="info-tooltip">
+                            <div class="tooltip-text">Design currently available only on desktop, working on it...</div>
+                            <div class="tooltip-text">Diseño actualmente disponible solo en escritorio, trabajando en
+                                ello...</div>
+                        </div>
+                    </span>
+                </div>
+            </div>
+        </header>
+        <!-- Navegación por Semanas -->
+        <div class="barra-semanas">
+            <!-- Botones para Desktop -->
+            <button class="boton-semana activo" onclick="cambiarSemana(1)">Semana 1</button>
+            <button class="boton-semana" onclick="cambiarSemana(2)">Semana 2</button>
+            <button class="boton-semana" onclick="cambiarSemana(3)">Semana 3</button>
+            <button class="boton-semana" onclick="cambiarSemana(4)">Semana 4</button>
+            <button class="boton-semana" onclick="cambiarSemana('todas')">Ver Mes Completo</button>
+
+            <!-- Select para Mobile (se muestra solo en pantallas pequeñas por CSS) -->
+            <select id="selectorSemanaMobile" class="selector-semana-mobile" onchange="cambiarSemana(this.value)">
+                <option value="1">Semana 1</option>
+                <option value="2">Semana 2</option>
+                <option value="3">Semana 3</option>
+                <option value="4">Semana 4</option>
+                <option value="todas">Ver Mes Completo</option>
+            </select>
+        </div>
+        <!-- Botón Agregar Nuevo -->
+        <button class="boton boton-agregar" onclick="agregarViaje()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Nuevo Viaje
+        </button>
+        <!-- Tabla de Datos -->
+        <div class="tabla-contenedor">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 25%;">Fecha</th>
+                        <th style="width: 25%;">Cliente / Destino</th>
+                        <th style="width: 15%;">Día</th>
+                        <th style="width: 15%;">Precio (₡)</th>
+                        <th style="width: 10%;">Distancia (km)</th>
+                        <th style="width: 10%; text-align: center;">Acción</th>
+                    </tr>
+                </thead>
+                <tbody id="cuerpoTabla">
+                    <!-- Aquí se generan las filas con Javascript -->
+                </tbody>
+            </table>
+            <!-- Mensaje cuando no hay datos -->
+            <div id="mensajeVacio"
+                style="text-align: center; padding: 40px; color: var(--color-texto-suave); display: none;">
+                No hay viajes registrados en esta vista.
+            </div>
+        </div>
+        <!-- Sección de Totales (Resumen) -->
+        <div class="seccion-totales">
+            <!-- Total de la vista actual -->
+            <div class="tarjeta-total semana">
+                <div class="titulo-tarjeta">Total Vista Actual</div>
+                <div class="valor-dinero" id="totalVistaDinero">₡ 0</div>
+                <div class="valor-km" id="totalVistaKm">0 km</div>
+            </div>
+            <!-- Total del Mes Completo -->
+            <div class="tarjeta-total mes">
+                <div class="titulo-tarjeta">Total Acumulado (<span id="etiquetaMes">Noviembre</span>)</div>
+                <div class="valor-dinero" id="totalMesDinero">₡ 0</div>
+                <div class="valor-km" id="totalMesKm">0 km</div>
+            </div>
+        </div>
+        <!-- Sección de Totales Diarios -->
+        <div id="contenedorDias" class="seccion-totales">
+            <!-- Aquí se generan las tarjetas de días con Javascript -->
+        </div>
+        <!-- Botón Descargar PDF -->
+        <button class="boton boton-pdf" onclick="generarPDF()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 9V2h12v7"></path>
+                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                <path d="M6 14h12v8H6z"></path>
+            </svg>
+            Descargar Reporte PDF
+        </button>
+        <!-- Footer -->
+        <footer class="footer">
+            <img src="./assets/logo.png" alt="Logo" class="footer-logo">
+            <p class="footer-text">© 2025 SR STUDIO. Todos los derechos reservados.</p>
+            <a href="https://srstudio.vercel.app/" target="_blank" class="footer-link">Visitar Portfolio</a>
+        </footer>
+    </div>
+    <script src="./JS/main.js"></script>
+</body>
+
+
+</html>
