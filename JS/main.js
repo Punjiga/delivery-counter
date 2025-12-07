@@ -293,10 +293,31 @@ window.borrarGasto = function (id) {
     }).then((result) => {
         if (result.isConfirmed) {
             listaGastos = listaGastos.filter(g => g.id !== id);
-            actualizarVista(); // Re-render everything
+            actualizarVista();
             guardar();
         }
     });
+};
+
+// Función para actualizar gastos inline (como viajes)
+window.actualizarGasto = function (id, campo, valor) {
+    const gasto = listaGastos.find(g => g.id === id);
+    if (!gasto) return;
+
+    if (campo === 'monto') {
+        gasto[campo] = parseFloat(valor) || 0;
+    } else {
+        gasto[campo] = valor;
+    }
+
+    guardar();
+
+    // Si cambiamos la fecha, podría afectar filtros
+    if (campo === 'fecha') {
+        actualizarVista();
+    } else {
+        calcularTotales();
+    }
 };
 
 function agregarGasto() {
@@ -304,13 +325,7 @@ function agregarGasto() {
         title: 'Registrar Gasto',
         html: `
             <input type="date" id="swal-fecha" class="swal2-input" value="${new Date().toISOString().split('T')[0]}">
-            <select id="swal-tipo" class="swal2-input">
-                <option value="Gasolina">⛽ Gasolina</option>
-                <option value="Mantenimiento">🔧 Mantenimiento</option>
-                <option value="Comida">🍔 Comida</option>
-                <option value="Otro">📝 Otro</option>
-            </select>
-            <input type="text" id="swal-desc" class="swal2-input" placeholder="Descripción (opcional)">
+            <input type="text" id="swal-concepto" class="swal2-input" placeholder="Concepto (ej: Gasolina, Comida...)">
             <input type="number" id="swal-monto" class="swal2-input" placeholder="Monto (₡)">
         `,
         focusConfirm: false,
@@ -320,8 +335,7 @@ function agregarGasto() {
         preConfirm: () => {
             return {
                 fecha: document.getElementById('swal-fecha').value,
-                tipo: document.getElementById('swal-tipo').value,
-                descripcion: document.getElementById('swal-desc').value,
+                concepto: document.getElementById('swal-concepto').value,
                 monto: document.getElementById('swal-monto').value
             }
         }
@@ -333,14 +347,11 @@ function agregarGasto() {
             const nuevoGasto = {
                 id: Date.now(),
                 fecha: data.fecha,
-                tipo: data.tipo,
-                descripcion: data.descripcion || data.tipo,
+                concepto: data.concepto || 'Gasto',
                 monto: parseFloat(data.monto)
             };
 
             listaGastos.push(nuevoGasto);
-            // Si la fecha del gasto no es del mes visible, ¿aviso o cambio de vista?
-            // Por simplicidad, dejamos que el usuario navegue. Pero idealmente refrescamos si es fecha actual.
             actualizarVista();
             guardar();
         }
@@ -471,17 +482,31 @@ function renderizarGastos() {
         mensajeVacio.style.display = 'none';
         gastosFiltrados.forEach(gasto => {
             const fila = document.createElement('tr');
-            // Formato fecha simple
-            const fechaFmt = new Date(gasto.fecha + 'T00:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+
+            // Compatibilidad: usar 'concepto' o fallback a 'tipo'/'descripcion' de datos antiguos
+            const conceptoValor = gasto.concepto || gasto.descripcion || gasto.tipo || '';
 
             fila.innerHTML = `
-                <td data-label="Fecha">${fechaFmt}</td>
-                <td data-label="Tipo">${gasto.tipo}</td>
-                <td data-label="Descripción">${gasto.descripcion}</td>
-                <td data-label="Monto">₡ ${gasto.monto.toLocaleString('es-CR')}</td>
+                <td data-label="Fecha">
+                    <input type="date" class="input-tabla" value="${gasto.fecha}" 
+                        onchange="actualizarGasto(${gasto.id}, 'fecha', this.value)">
+                </td>
+                <td data-label="Concepto">
+                    <input type="text" class="input-tabla" value="${conceptoValor}" 
+                        placeholder="Concepto..." 
+                        oninput="actualizarGasto(${gasto.id}, 'concepto', this.value)">
+                </td>
+                <td data-label="Monto">
+                    <input type="number" class="input-tabla" value="${gasto.monto || ''}" 
+                        placeholder="₡ 0" 
+                        oninput="actualizarGasto(${gasto.id}, 'monto', this.value)">
+                </td>
                 <td data-label="Acción" style="text-align: center;">
-                    <button class="boton-borrar" onclick="borrarGasto(${gasto.id})" style="width:32px; height:32px; font-size: 0.8rem;">
-                        X
+                    <button class="boton-borrar" onclick="borrarGasto(${gasto.id})">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
                     </button>
                 </td>
             `;

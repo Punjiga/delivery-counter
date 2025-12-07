@@ -286,6 +286,15 @@ header {
     box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
 }
 
+.boton-gasto {
+    transition: all 0.2s ease;
+}
+
+.boton-gasto:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(96, 125, 139, 0.35);
+}
+
 .boton-pdf {
     background-color: var(--color-texto);
     color: white;
@@ -512,16 +521,21 @@ td {
         justify-content: center;
     }
 
-    .boton-agregar {
-        width: 100%;
-        margin-left: 0;
+    /* Botones de acción principales - proporciones equilibradas */
+    .acciones-principales {
+        flex-wrap: wrap;
+        justify-content: center !important;
     }
 
-    /* Mostrar Dropdown y ocultar botones en Tablet/Mobile si es necesario, 
-       pero el usuario pidió específicamente mobile. 
-       Vamos a aplicarlo desde < 768px para asegurar que no se corte en tablets pequeñas 
-       o ajustar el media query a lo que el usuario pidió (mobile vertical/select).
-    */
+    .boton-agregar,
+    .boton-gasto {
+        width: auto;
+        min-width: 160px;
+        flex: 0 1 auto;
+        margin-left: 0;
+        padding: 10px 18px;
+        font-size: 0.95rem;
+    }
 }
 
 /* MÓVILES PEQUEÑOS (< 768px) - TRANSFORMACIÓN A CARDS Y SELECT */
@@ -652,6 +666,20 @@ td {
         font-size: 0.9rem;
     }
 
+    /* Botones un poco más compactos en móviles pequeños */
+    .boton-agregar,
+    .boton-gasto {
+        min-width: 140px;
+        padding: 10px 14px;
+        font-size: 0.9rem;
+    }
+
+    .boton-agregar svg,
+    .boton-gasto svg {
+        width: 16px;
+        height: 16px;
+    }
+
     /* Ajuste para que las etiquetas de las cards no se monten */
     td::before {
         font-size: 0.8rem;
@@ -739,5 +767,119 @@ td {
     .aviso-tarifa,
     .footer {
         display: none !important;
+    }
+}
+
+/* --- SWEETALERT2 RESPONSIVE --- */
+/* Contenedor con padding para que el popup nunca pegue a los bordes */
+.swal2-container {
+    padding: 20px !important;
+    overflow-x: hidden !important;
+}
+
+/* Popup con ancho generoso y sin scroll */
+.swal2-popup {
+    margin: 0 auto !important;
+    max-width: 500px !important;
+    width: calc(100% - 40px) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2) !important;
+    padding: 2rem !important;
+    overflow: visible !important;
+}
+
+/* Contenedor HTML sin overflow */
+.swal2-html-container {
+    margin: 1rem 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    max-width: 100% !important;
+}
+
+/* Inputs dentro del popup más elegantes y anchos */
+.swal2-input,
+.swal2-select {
+    border-radius: 8px !important;
+    border: 1px solid var(--color-borde) !important;
+    padding: 14px !important;
+    font-size: 1rem !important;
+    transition: border-color 0.2s ease !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    margin: 0.5rem 0 !important;
+}
+
+.swal2-input:focus,
+.swal2-select:focus {
+    border-color: var(--color-principal) !important;
+    box-shadow: 0 0 0 3px rgba(108, 190, 209, 0.15) !important;
+    outline: none !important;
+}
+
+/* Botones del popup estilizados */
+.swal2-confirm {
+    background-color: var(--color-principal) !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    padding: 12px 28px !important;
+    transition: all 0.2s ease !important;
+}
+
+.swal2-confirm:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(108, 190, 209, 0.4) !important;
+}
+
+.swal2-cancel,
+.swal2-deny {
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    padding: 12px 28px !important;
+}
+
+/* Tablets */
+@media (max-width: 768px) {
+    .swal2-popup {
+        max-width: calc(100vw - 40px) !important;
+        width: calc(100vw - 40px) !important;
+        padding: 1.5rem !important;
+    }
+}
+
+/* Responsive para móvil */
+@media (max-width: 480px) {
+    .swal2-container {
+        padding: 10px !important;
+    }
+
+    .swal2-popup {
+        max-width: calc(100vw - 20px) !important;
+        width: calc(100vw - 20px) !important;
+        padding: 1.25rem !important;
+    }
+
+    .swal2-title {
+        font-size: 1.2rem !important;
+    }
+
+    .swal2-input,
+    .swal2-select {
+        padding: 12px !important;
+        font-size: 16px !important;
+        /* 16px evita zoom en iOS */
+    }
+
+    .swal2-actions {
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+    }
+
+    .swal2-confirm,
+    .swal2-cancel,
+    .swal2-deny {
+        flex: 1 1 auto !important;
+        min-width: 100px !important;
+        padding: 10px 20px !important;
     }
 }
