@@ -28,6 +28,9 @@ window.onload = function () {
     const semanaHoy = getSemanaDelMes(hoy.toISOString().split('T')[0]);
     semanaActual = semanaHoy;
 
+    // Sanitizar Fechas (Corregir 'hoy'/'ayer' mal guardados)
+    sanitizarFechasUI();
+
     actualizarEncabezadoMes();
     // Nota: actualizarEncabezadoMes ahora llamará a actualizarBotonesSemana()
     actualizarVista();
@@ -678,10 +681,10 @@ function generarPDF() {
         if (result.isDismissed) return; // Cancelado
 
         const incluirGastos = result.isConfirmed;
-        const vistaOriginal = semanaActual;
+        // const vistaOriginal = semanaActual; // Ya no necesitamos guardar vista original porque no la cambiamos
 
-        // Cambiar a vista completa para reporte
-        cambiarSemana('todas');
+        // NO cambiamos a vista completa, respetamos la vista actual del usuario
+        // cambiarSemana('todas');
 
         // Manejar visibilidad de gastos usando IDs
         const containerGastos = document.querySelector('.gastos-contenedor');
@@ -709,4 +712,40 @@ function generarPDF() {
             }
         }, 500);
     });
+}
+
+// Nueva función para corregir inconsistencias de "Hoy" y "Ayer" al cargar
+function sanitizarFechasUI() {
+    const hoyStr = new Date().toDateString();
+    const ayer = new Date();
+    ayer.setDate(ayer.getDate() - 1);
+    const ayerStr = ayer.toDateString();
+
+    let huboCambios = false;
+
+    // Revisar Viajes
+    listaViajes.forEach(viaje => {
+        if (!viaje.tipoFechaUI || viaje.tipoFechaUI === 'custom') return;
+
+        const fechaViaje = new Date(viaje.fecha + 'T00:00:00').toDateString();
+
+        if (viaje.tipoFechaUI === 'hoy') {
+            if (fechaViaje !== hoyStr) {
+                // Si dice hoy pero no es hoy:
+                if (fechaViaje === ayerStr) viaje.tipoFechaUI = 'ayer';
+                else viaje.tipoFechaUI = 'custom';
+                huboCambios = true;
+            }
+        } else if (viaje.tipoFechaUI === 'ayer') {
+            if (fechaViaje !== ayerStr) {
+                viaje.tipoFechaUI = 'custom';
+                huboCambios = true;
+            }
+        }
+    });
+
+    if (huboCambios) {
+        // Guardamos silenciosamente para limpiar la BD local
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(listaViajes));
+    }
 }
