@@ -2,14 +2,10 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 
 module.exports = async (req, res) => {
-    // Enable CORS
-    res.setHeader('Access-Control-Allow-Credentials', true);
+    // CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-    res.setHeader(
-        'Access-Control-Allow-Headers',
-        'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
-    );
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     if (req.method === 'OPTIONS') {
         res.status(200).end();
@@ -20,25 +16,37 @@ module.exports = async (req, res) => {
         return res.status(405).json({ error: 'Method Not Allowed' });
     }
 
-    const { username, password } = req.body;
+    // --- READ RAW JSON BODY (IMPORTANT FOR VERCEL) ---
+    let rawBody = "";
+    await new Promise(resolve => {
+        req.on("data", chunk => rawBody += chunk);
+        req.on("end", () => resolve());
+    });
 
-    // Simple Hash Validation
-    // The AUTH_PASSWORD_HASH env var should contain the SHA-256 hash of the password
-    const validHash = process.env.AUTH_PASSWORD_HASH;
-
-    if (!validHash) {
-        return res.status(500).json({ error: 'Server configuration error: Missing AUTH_PASSWORD_HASH' });
+    let body = {};
+    try {
+        body = JSON.parse(rawBody || "{}");
+    } catch (err) {
+        return res.status(400).json({ error: "Invalid JSON" });
     }
 
+    const { username, password } = body;
+
+    if (!password) {
+        return res.status(400).json({ error: "Missing password" });
+    }
+
+    const validHash = process.env.AUTH_PASSWORD_HASH;
+    if (!validHash) {
+        return res.status(500).json({ error: 'Missing AUTH_PASSWORD_HASH' });
+    }
+
+    // Hash the received password
     const inputHash = crypto.createHash('sha256').update(password).digest('hex');
 
-    // Compare hashes
     if (inputHash === validHash) {
-        // Sign JWT
-        // Uses a secret from env, or a fallback (NOT RECOMMENDED FOR PROD, BUT OK FOR DEMO/SIMPLE)
-        const secret = process.env.JWT_SECRET || 'default_jwt_secret_change_me_in_prod';
-        const token = jwt.sign({ user: username || 'admin', role: 'admin' }, secret, { expiresIn: '7d' });
-
+        const secret = process.env.JWT_SECRET || 'default_secret';
+        const token = jwt.sign({ user: username || "user" }, secret, { expiresIn: '7d' });
         return res.status(200).json({ token });
     } else {
         return res.status(401).json({ error: 'Contraseña incorrecta' });
