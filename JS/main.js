@@ -37,10 +37,9 @@ function cambiarMes(delta) {
 function irAlMesActual() {
     fechaVisualizacion = new Date();
     actualizarEncabezadoMes();
-    // Auto-select semana actual al volver a "Hoy"
-    const hoy = new Date();
-    semanaActual = getSemanaDelMes(hoy.toISOString().split('T')[0]);
-    actualizarVista();
+    // Auto-select semana actual usando fecha local (sin conversión UTC)
+    const semanaHoy = getSemanaDelMesLocal(new Date());
+    cambiarSemana(semanaHoy);
 }
 
 function actualizarEncabezadoMes() {
@@ -134,16 +133,18 @@ function cambiarSemana(semana) {
 }
 
 function getSemanaDelMes(fechaStr) {
-    // Heurística simple: Semana 1 (1-7), Semana 2 (8-14), etc.
-    // Esto coincide con la estructura visual de "4 semanas" mejor que las semanas de calendario reales que varían
-    const dia = new Date(fechaStr + 'T00:00:00').getDate(); // T00:00:00 para evitar problemas de timezone
+    // Para strings de fecha (usado en filtros de viajes/gastos)
+    const dia = new Date(fechaStr + 'T00:00:00').getDate();
     const semana = Math.ceil(dia / 7);
-    return semana > 4 ? 4 : semana; // Agrupar días 29-31 en semana 4 o dejar que sean 5? 
-    // El usuario tenía botones hasta Semana 4. Vamos a asumir que semana 5 se muestra en la 4 o creamos botón semana 5?
-    // Mejor: Si es día > 28, es semana 5. Pero si la UI solo tiene 4 botones, mostramos en la 4 o agregamos botón?
-    // Revisando index.html original, tenía 4 botones. Voy a permitir que retorne 5 y si no hay botón, se ve en "Todas".
-    // O mejor, agrupar 5ta semana con la 4ta para simplificar si no queremos cambiar HTML de botones
-    return Math.ceil(dia / 7);
+    return semana > 4 ? 4 : semana;
+}
+
+function getSemanaDelMesLocal(dateObj) {
+    // Para objetos Date locales (usado en inicialización y botón Hoy)
+    // Usa getDate() directamente para evitar problemas de timezone con toISOString()
+    const dia = dateObj.getDate();
+    const semana = Math.ceil(dia / 7);
+    return semana > 4 ? 4 : semana;
 }
 
 // 5. Gestión de Viajes
@@ -616,16 +617,14 @@ function initData() {
     // Asegurar que fechaVisualizacion empiece en el mes actual real
     fechaVisualizacion = new Date();
 
-    // Auto-Select Semana Actual
-    const hoy = new Date();
-    const semanaHoy = getSemanaDelMes(hoy.toISOString().split('T')[0]);
-    semanaActual = semanaHoy;
-
     // Sanitizar Fechas
     sanitizarFechasUI();
 
     actualizarEncabezadoMes();
-    actualizarVista();
+
+    // Auto-Select Semana Actual usando fecha local (sin conversión UTC)
+    const semanaHoy = getSemanaDelMesLocal(new Date());
+    cambiarSemana(semanaHoy);
 }
 
 // 7. Cálculos
