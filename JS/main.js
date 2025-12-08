@@ -527,7 +527,6 @@ function checkAuth() {
 
 async function handleLogin(e) {
     e.preventDefault();
-    const username = document.getElementById('usernameInput').value;
     const password = document.getElementById('passwordInput').value;
     const btn = e.target.querySelector('button');
     const originalText = btn.innerHTML;
@@ -539,7 +538,7 @@ async function handleLogin(e) {
         const res = await fetch('/api/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password })
+            body: JSON.stringify({ password })
         });
 
         if (res.ok) {
@@ -572,6 +571,19 @@ function enableGuestMode() {
 function unlockApp() {
     document.getElementById('login-overlay').style.display = 'none';
     document.getElementById('app-container').style.display = 'block';
+
+    // Update Banner with proper styling
+    const banner = document.getElementById('loggedInBanner');
+    if (banner) {
+        banner.style.display = 'block';
+        if (isGuest) {
+            banner.className = 'loggedin-banner guest-mode';
+            banner.innerHTML = 'Accediste como: <strong>INVITADO</strong>';
+        } else {
+            banner.className = 'loggedin-banner admin-mode';
+            banner.innerHTML = 'Accediste como: <strong>ADMINISTRADOR</strong>';
+        }
+    }
 
     // Inicializar App
     initData();

@@ -22,9 +22,7 @@
                 <p>Ingresa tu contraseña para acceder</p>
             </div>
             <form id="loginForm" onsubmit="handleLogin(event)">
-                <div class="input-group">
-                    <input type="text" id="usernameInput" placeholder="Usuario (Opcional)" class="login-input">
-                </div>
+
                 <div class="input-group">
                     <input type="password" id="passwordInput" placeholder="Contraseña" class="login-input" required>
                 </div>
@@ -46,6 +44,9 @@
     </div>
 
     <div class="contenedor-principal" id="app-container" style="display: none;">
+        <!-- Logged In Banner -->
+        <div id="loggedInBanner" class="loggedin-banner"></div>
+
         <!-- Encabezado -->
         <header>
             <div class="titulo-seccion">
