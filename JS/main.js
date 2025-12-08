@@ -7,33 +7,14 @@ let semanaActual = 'todas'; // 'todas', 1, 2, 3, 4, 5
 const STORAGE_KEY = 'datosConductor_v4';
 let listaGastos = [];
 const STORAGE_KEY_GASTOS = 'datosConductor_v4_gastos';
+// AUTH STATE
+let isGuest = false;
+const AUTH_TOKEN_KEY = 'delivery_auth_token';
 
 // 2. Inicialización
 window.onload = function () {
-    const datosGuardados = localStorage.getItem(STORAGE_KEY);
-    if (datosGuardados) {
-        listaViajes = JSON.parse(datosGuardados);
-    }
-    const gastosGuardados = localStorage.getItem(STORAGE_KEY_GASTOS);
-    if (gastosGuardados) {
-        listaGastos = JSON.parse(gastosGuardados);
-    }
-
-    // Asegurar que fechaVisualizacion empiece en el mes actual real
-    fechaVisualizacion = new Date();
-
-    // Auto-Select Semana Actual
-    // Si la fecha actual coincide con el mes visualizado (que es true al inicio), seleccionar la semana correspondiente
-    const hoy = new Date();
-    const semanaHoy = getSemanaDelMes(hoy.toISOString().split('T')[0]);
-    semanaActual = semanaHoy;
-
-    // Sanitizar Fechas (Corregir 'hoy'/'ayer' mal guardados)
-    sanitizarFechasUI();
-
-    actualizarEncabezadoMes();
-    // Nota: actualizarEncabezadoMes ahora llamará a actualizarBotonesSemana()
-    actualizarVista();
+    checkAuth();
+    // Note: Initialization moved to initData() called after auth
 };
 
 function guardar() {
@@ -518,6 +499,119 @@ function renderizarGastos() {
     }
 }
 
+// --- AUTHENTICATION LOGIC ---
+
+function checkAuth() {
+    const token = localStorage.getItem(AUTH_TOKEN_KEY);
+    if (!token) {
+        showLoginOverlay();
+        return;
+    }
+
+    // Decode token to check expiry (Simplified client check)
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const now = Math.floor(Date.now() / 1000);
+        if (payload.exp < now) {
+            logout();
+            return;
+        }
+    } catch (e) {
+        logout();
+        return;
+    }
+
+    // Token valid
+    unlockApp();
+}
+
+async function handleLogin(e) {
+    e.preventDefault();
+    const username = document.getElementById('usernameInput').value;
+    const password = document.getElementById('passwordInput').value;
+    const btn = e.target.querySelector('button');
+    const originalText = btn.innerHTML;
+
+    btn.disabled = true;
+    btn.innerHTML = 'Verificando...';
+
+    try {
+        const res = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            localStorage.setItem(AUTH_TOKEN_KEY, data.token);
+            unlockApp();
+        } else {
+            Swal.fire('Error', 'Contraseña incorrecta', 'error');
+        }
+    } catch (error) {
+        Swal.fire('Error', 'No se pudo conectar con el servidor', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+
+function enableGuestMode() {
+    isGuest = true;
+    unlockApp();
+
+    // Disable actions
+    document.querySelectorAll('.boton-agregar, .boton-gasto, .boton-borrar').forEach(btn => {
+        btn.classList.add('guest-disabled');
+        btn.disabled = true;
+        btn.title = "Modo Invitado (Solo Lectura)";
+    });
+}
+
+function unlockApp() {
+    document.getElementById('login-overlay').style.display = 'none';
+    document.getElementById('app-container').style.display = 'block';
+
+    // Inicializar App
+    initData();
+}
+
+function logout() {
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+    location.reload();
+}
+
+function showLoginOverlay() {
+    document.getElementById('login-overlay').style.display = 'flex';
+    document.getElementById('app-container').style.display = 'none';
+}
+
+function initData() {
+    const datosGuardados = localStorage.getItem(STORAGE_KEY);
+    if (datosGuardados) {
+        listaViajes = JSON.parse(datosGuardados);
+    }
+    const gastosGuardados = localStorage.getItem(STORAGE_KEY_GASTOS);
+    if (gastosGuardados) {
+        listaGastos = JSON.parse(gastosGuardados);
+    }
+
+    // Asegurar que fechaVisualizacion empiece en el mes actual real
+    fechaVisualizacion = new Date();
+
+    // Auto-Select Semana Actual
+    const hoy = new Date();
+    const semanaHoy = getSemanaDelMes(hoy.toISOString().split('T')[0]);
+    semanaActual = semanaHoy;
+
+    // Sanitizar Fechas
+    sanitizarFechasUI();
+
+    actualizarEncabezadoMes();
+    actualizarVista();
+}
+
 // 7. Cálculos
 function calcularTotales(viajesYaFiltrados) {
     // 1. Filtrar Viajes (Ingresos)
@@ -551,16 +645,21 @@ function calcularTotales(viajesYaFiltrados) {
     const gananciaNeta = totalIngresos - totalGastos;
 
     // 4. Actualizar DOM
-    document.getElementById('totalVistaDinero').innerText = '₡ ' + totalIngresos.toLocaleString('es-CR');
+    // Si es Guest, ocultar valores
+    const dineroText = isGuest ? '<span class="guest-blur">****</span>' : ('₡ ' + totalIngresos.toLocaleString('es-CR'));
+    const gastosText = isGuest ? '<span class="guest-blur">****</span>' : ('₡ ' + totalGastos.toLocaleString('es-CR'));
+    const gananciaText = isGuest ? '<span class="guest-blur">****</span>' : ('₡ ' + gananciaNeta.toLocaleString('es-CR'));
+
+    document.getElementById('totalVistaDinero').innerHTML = dineroText;
     document.getElementById('totalVistaKm').innerText = totalKm.toFixed(1) + ' km';
 
     const elGastos = document.getElementById('totalVistaGastos');
-    if (elGastos) elGastos.innerText = '₡ ' + totalGastos.toLocaleString('es-CR');
+    if (elGastos) elGastos.innerHTML = gastosText;
 
     // Ganancia Neta: Color Exito (Verde) si positivo, Peligro (Rojo) si negativo
     const elGanancia = document.getElementById('totalVistaGanancia');
     if (elGanancia) {
-        elGanancia.innerText = '₡ ' + gananciaNeta.toLocaleString('es-CR');
+        elGanancia.innerHTML = gananciaText;
         // Usar verde para ganancia (exito), rojo para perdida (peligro)
         elGanancia.style.color = gananciaNeta >= 0 ? 'var(--color-exito)' : 'var(--color-peligro)';
 
@@ -654,11 +753,13 @@ function renderizarTotalesDiarios(viajes) {
                 return partes.join(' ');
             }).join(', ');
 
+            const dineroDiaText = isGuest ? '<span class="guest-blur">****</span>' : ('₡ ' + totalesDias[dia].dinero.toLocaleString('es-CR'));
+
             const tarjeta = document.createElement('div');
             tarjeta.className = `tarjeta-total dia ${mapaClases[dia] || ''} fade-in`;
             tarjeta.innerHTML = `
                 <div class="titulo-tarjeta">Total ${dia} (${fechasTexto})</div>
-                <div class="valor-dinero">₡ ${totalesDias[dia].dinero.toLocaleString('es-CR')}</div>
+                <div class="valor-dinero">${dineroDiaText}</div>
                 <div class="valor-km">${totalesDias[dia].km.toFixed(1)} km</div>
             `;
             contenedorDias.appendChild(tarjeta);
