@@ -18,8 +18,11 @@ window.onload = function () {
 };
 
 function guardar() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(listaViajes));
-    localStorage.setItem(STORAGE_KEY_GASTOS, JSON.stringify(listaGastos));
+    // Solo guardar en localStorage si es admin (no invitado)
+    if (!isGuest) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(listaViajes));
+        localStorage.setItem(STORAGE_KEY_GASTOS, JSON.stringify(listaGastos));
+    }
     calcularTotales();
 }
 
@@ -559,13 +562,7 @@ async function handleLogin(e) {
 function enableGuestMode() {
     isGuest = true;
     unlockApp();
-
-    // Disable actions
-    document.querySelectorAll('.boton-agregar, .boton-gasto, .boton-borrar').forEach(btn => {
-        btn.classList.add('guest-disabled');
-        btn.disabled = true;
-        btn.title = "Modo Invitado (Solo Lectura)";
-    });
+    // Invitados pueden usar la app normalmente, pero sus datos no se guardan
 }
 
 function unlockApp() {
@@ -600,13 +597,20 @@ function showLoginOverlay() {
 }
 
 function initData() {
-    const datosGuardados = localStorage.getItem(STORAGE_KEY);
-    if (datosGuardados) {
-        listaViajes = JSON.parse(datosGuardados);
-    }
-    const gastosGuardados = localStorage.getItem(STORAGE_KEY_GASTOS);
-    if (gastosGuardados) {
-        listaGastos = JSON.parse(gastosGuardados);
+    // Invitados empiezan con listas vacías (datos temporales)
+    // Admin carga datos guardados en localStorage
+    if (!isGuest) {
+        const datosGuardados = localStorage.getItem(STORAGE_KEY);
+        if (datosGuardados) {
+            listaViajes = JSON.parse(datosGuardados);
+        }
+        const gastosGuardados = localStorage.getItem(STORAGE_KEY_GASTOS);
+        if (gastosGuardados) {
+            listaGastos = JSON.parse(gastosGuardados);
+        }
+    } else {
+        listaViajes = [];
+        listaGastos = [];
     }
 
     // Asegurar que fechaVisualizacion empiece en el mes actual real
@@ -656,11 +660,10 @@ function calcularTotales(viajesYaFiltrados) {
     const totalGastos = gastos.reduce((sum, g) => sum + (g.monto || 0), 0);
     const gananciaNeta = totalIngresos - totalGastos;
 
-    // 4. Actualizar DOM
-    // Si es Guest, ocultar valores
-    const dineroText = isGuest ? '<span class="guest-blur">****</span>' : ('₡ ' + totalIngresos.toLocaleString('es-CR'));
-    const gastosText = isGuest ? '<span class="guest-blur">****</span>' : ('₡ ' + totalGastos.toLocaleString('es-CR'));
-    const gananciaText = isGuest ? '<span class="guest-blur">****</span>' : ('₡ ' + gananciaNeta.toLocaleString('es-CR'));
+    // 4. Actualizar DOM - Mostrar valores para todos (admin e invitados)
+    const dineroText = '₡ ' + totalIngresos.toLocaleString('es-CR');
+    const gastosText = '₡ ' + totalGastos.toLocaleString('es-CR');
+    const gananciaText = '₡ ' + gananciaNeta.toLocaleString('es-CR');
 
     document.getElementById('totalVistaDinero').innerHTML = dineroText;
     document.getElementById('totalVistaKm').innerText = totalKm.toFixed(1) + ' km';
@@ -765,7 +768,7 @@ function renderizarTotalesDiarios(viajes) {
                 return partes.join(' ');
             }).join(', ');
 
-            const dineroDiaText = isGuest ? '<span class="guest-blur">****</span>' : ('₡ ' + totalesDias[dia].dinero.toLocaleString('es-CR'));
+            const dineroDiaText = '₡ ' + totalesDias[dia].dinero.toLocaleString('es-CR');
 
             const tarjeta = document.createElement('div');
             tarjeta.className = `tarjeta-total dia ${mapaClases[dia] || ''} fade-in`;
