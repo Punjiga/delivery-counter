@@ -621,11 +621,7 @@ async function handleLogin(e) {
     } catch (error) {
         btn.disabled = false;
         btn.innerHTML = originalText;
-        await Swal.fire({
-            icon: 'error',
-            title: 'Error de Conexión',
-            text: 'No se pudo conectar con el servidor'
-        });
+        alert('Error: No se pudo conectar con el servidor');
         return;
     }
 
@@ -633,11 +629,7 @@ async function handleLogin(e) {
     if (!res.ok) {
         btn.disabled = false;
         btn.innerHTML = originalText;
-        await Swal.fire({
-            icon: 'error',
-            title: 'Contraseña Incorrecta',
-            text: 'Por favor verifica tu contraseña e intenta de nuevo'
-        });
+        alert('Contraseña incorrecta. Por favor verifica e intenta de nuevo.');
         return;
     }
 
