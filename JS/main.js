@@ -611,36 +611,41 @@ async function handleLogin(e) {
     btn.disabled = true;
     btn.innerHTML = 'Verificando...';
 
+    let res;
     try {
-        const res = await fetch('/api/login', {
+        res = await fetch('/api/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ password })
         });
-
-        if (res.ok) {
-            const data = await res.json();
-            localStorage.setItem(AUTH_TOKEN_KEY, data.token);
-            btn.innerHTML = 'Cargando datos...';
-            await unlockApp();
-        } else {
-            btn.disabled = false;
-            btn.innerHTML = originalText;
-            await Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'Contraseña incorrecta'
-            });
-        }
     } catch (error) {
         btn.disabled = false;
         btn.innerHTML = originalText;
         await Swal.fire({
             icon: 'error',
-            title: 'Error',
+            title: 'Error de Conexión',
             text: 'No se pudo conectar con el servidor'
         });
+        return;
     }
+
+    // Si la contraseña es incorrecta
+    if (!res.ok) {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+        await Swal.fire({
+            icon: 'error',
+            title: 'Contraseña Incorrecta',
+            text: 'Por favor verifica tu contraseña e intenta de nuevo'
+        });
+        return;
+    }
+
+    // Contraseña correcta - proceder con login
+    const data = await res.json();
+    localStorage.setItem(AUTH_TOKEN_KEY, data.token);
+    btn.innerHTML = 'Cargando datos...';
+    await unlockApp();
 }
 
 function enableGuestMode() {
