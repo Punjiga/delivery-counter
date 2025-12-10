@@ -11,6 +11,14 @@ const STORAGE_KEY_GASTOS = 'datosConductor_v4_gastos';
 let isGuest = false;
 const AUTH_TOKEN_KEY = 'delivery_auth_token';
 
+// Función para obtener fecha local en formato YYYY-MM-DD (evita problemas de timezone con toISOString)
+function getLocalDateString(date = new Date()) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 // 2. Inicialización
 window.onload = function () {
     checkAuth();
@@ -22,8 +30,58 @@ function guardar() {
     if (!isGuest) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(listaViajes));
         localStorage.setItem(STORAGE_KEY_GASTOS, JSON.stringify(listaGastos));
+        // Sincronizar con la nube
+        guardarEnNube();
     }
     calcularTotales();
+}
+
+// --- SINCRONIZACIÓN CON LA NUBE (JSONBin.io) ---
+
+async function guardarEnNube() {
+    const token = localStorage.getItem(AUTH_TOKEN_KEY);
+    if (!token) return;
+
+    try {
+        const datos = {
+            viajes: listaViajes,
+            gastos: listaGastos,
+            ultimaActualizacion: new Date().toISOString()
+        };
+
+        await fetch('/api/sync', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(datos)
+        });
+    } catch (error) {
+        console.error('Error al sincronizar con la nube:', error);
+    }
+}
+
+async function cargarDesdeNube() {
+    const token = localStorage.getItem(AUTH_TOKEN_KEY);
+    if (!token) return null;
+
+    try {
+        const res = await fetch('/api/sync', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (res.ok) {
+            const datos = await res.json();
+            return datos;
+        }
+    } catch (error) {
+        console.error('Error al cargar desde la nube:', error);
+    }
+    return null;
 }
 
 // 3. Manejo de Fechas y Navegación
@@ -152,7 +210,7 @@ function agregarViaje() {
     Swal.fire({
         title: 'Nuevo Viaje',
         html: `
-            <input type="date" id="swal-fecha-viaje" class="swal2-input" value="${new Date().toISOString().split('T')[0]}">
+            <input type="date" id="swal-fecha-viaje" class="swal2-input" value="${getLocalDateString()}">
             <input type="text" id="swal-cliente" class="swal2-input" placeholder="Cliente / Destino">
             <input type="number" id="swal-precio" class="swal2-input" placeholder="Precio (₡)">
             <input type="number" step="0.1" id="swal-km" class="swal2-input" placeholder="Distancia (km)">
@@ -312,7 +370,7 @@ function agregarGasto() {
     Swal.fire({
         title: 'Registrar Gasto',
         html: `
-            <input type="date" id="swal-fecha" class="swal2-input" value="${new Date().toISOString().split('T')[0]}">
+            <input type="date" id="swal-fecha" class="swal2-input" value="${getLocalDateString()}">
             <input type="text" id="swal-concepto" class="swal2-input" placeholder="Concepto (ej: Gasolina, Comida...)">
             <input type="number" id="swal-monto" class="swal2-input" placeholder="Monto (₡)">
         `,
@@ -597,17 +655,30 @@ function showLoginOverlay() {
     document.getElementById('app-container').style.display = 'none';
 }
 
-function initData() {
+async function initData() {
     // Invitados empiezan con listas vacías (datos temporales)
-    // Admin carga datos guardados en localStorage
+    // Admin carga datos desde la nube primero, fallback a localStorage
     if (!isGuest) {
-        const datosGuardados = localStorage.getItem(STORAGE_KEY);
-        if (datosGuardados) {
-            listaViajes = JSON.parse(datosGuardados);
-        }
-        const gastosGuardados = localStorage.getItem(STORAGE_KEY_GASTOS);
-        if (gastosGuardados) {
-            listaGastos = JSON.parse(gastosGuardados);
+        // Intentar cargar desde la nube primero
+        const datosNube = await cargarDesdeNube();
+
+        if (datosNube && datosNube.viajes) {
+            // Datos de la nube disponibles
+            listaViajes = datosNube.viajes || [];
+            listaGastos = datosNube.gastos || [];
+            // Actualizar localStorage con datos de la nube
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(listaViajes));
+            localStorage.setItem(STORAGE_KEY_GASTOS, JSON.stringify(listaGastos));
+        } else {
+            // Fallback: cargar desde localStorage
+            const datosGuardados = localStorage.getItem(STORAGE_KEY);
+            if (datosGuardados) {
+                listaViajes = JSON.parse(datosGuardados);
+            }
+            const gastosGuardados = localStorage.getItem(STORAGE_KEY_GASTOS);
+            if (gastosGuardados) {
+                listaGastos = JSON.parse(gastosGuardados);
+            }
         }
     } else {
         listaViajes = [];
