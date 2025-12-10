@@ -41,7 +41,7 @@ module.exports = async (req, res) => {
         return res.status(500).json({ error: 'Missing AUTH_PASSWORD_HASH' });
     }
 
-    // Hash the received password
+    // Hash
     const inputHash = crypto.createHash('sha256').update(password).digest('hex');
 
     if (inputHash === validHash) {
