@@ -611,9 +611,31 @@ async function handleLogin(e) {
     // Si ya estamos logueados, no hacer nada
     if (isLoggedIn) return;
 
+    const username = document.getElementById('usernameInput').value.trim();
     const password = document.getElementById('passwordInput').value;
     const btn = e.target.querySelector('button');
     const originalText = btn.innerHTML;
+    const errorDiv = document.getElementById('loginError');
+
+    // Ocultar error previo
+    errorDiv.style.display = 'none';
+
+    // Función para mostrar error y limpiar campos
+    const showError = () => {
+        if (isLoggedIn) return;
+        errorDiv.style.display = 'flex';
+        document.getElementById('passwordInput').value = '';
+        document.getElementById('usernameInput').value = '';
+        document.getElementById('usernameInput').focus();
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    };
+
+    // Validar usuario localmente (debe ser 'punjiga')
+    if (username.toLowerCase() !== 'punjiga') {
+        showError();
+        return;
+    }
 
     btn.disabled = true;
     btn.innerHTML = 'Verificando...';
@@ -626,17 +648,13 @@ async function handleLogin(e) {
             body: JSON.stringify({ password })
         });
     } catch (error) {
-        btn.disabled = false;
-        btn.innerHTML = originalText;
-        if (!isLoggedIn) alert('Error: No se pudo conectar con el servidor');
+        showError();
         return;
     }
 
     // Si la contraseña es incorrecta
     if (!res.ok) {
-        btn.disabled = false;
-        btn.innerHTML = originalText;
-        if (!isLoggedIn) alert('Contraseña incorrecta');
+        showError();
         return;
     }
 
