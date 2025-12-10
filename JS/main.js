@@ -578,6 +578,8 @@ function renderizarGastos() {
 
 // --- AUTHENTICATION LOGIC ---
 
+let isLoggedIn = false; // Flag para evitar alertas después de login exitoso
+
 async function checkAuth() {
     const token = localStorage.getItem(AUTH_TOKEN_KEY);
     if (!token) {
@@ -585,7 +587,7 @@ async function checkAuth() {
         return;
     }
 
-    // Decode token to check expiry (Simplified client check)
+    // Decode token to check expiry
     try {
         const payload = JSON.parse(atob(token.split('.')[1]));
         const now = Math.floor(Date.now() / 1000);
@@ -598,12 +600,17 @@ async function checkAuth() {
         return;
     }
 
-    // Token valid
+    // Token valid - ya estamos logueados
+    isLoggedIn = true;
     await unlockApp();
 }
 
 async function handleLogin(e) {
     e.preventDefault();
+
+    // Si ya estamos logueados, no hacer nada
+    if (isLoggedIn) return;
+
     const password = document.getElementById('passwordInput').value;
     const btn = e.target.querySelector('button');
     const originalText = btn.innerHTML;
@@ -621,7 +628,7 @@ async function handleLogin(e) {
     } catch (error) {
         btn.disabled = false;
         btn.innerHTML = originalText;
-        alert('Error: No se pudo conectar con el servidor');
+        if (!isLoggedIn) alert('Error: No se pudo conectar con el servidor');
         return;
     }
 
@@ -629,11 +636,13 @@ async function handleLogin(e) {
     if (!res.ok) {
         btn.disabled = false;
         btn.innerHTML = originalText;
-        alert('Contraseña incorrecta. Por favor verifica e intenta de nuevo.');
+        if (!isLoggedIn) alert('Contraseña incorrecta');
         return;
     }
 
-    // Contraseña correcta - proceder con login
+    // Contraseña correcta - marcar como logueado ANTES de cualquier otra cosa
+    isLoggedIn = true;
+
     const data = await res.json();
     localStorage.setItem(AUTH_TOKEN_KEY, data.token);
     btn.innerHTML = 'Cargando datos...';
@@ -642,15 +651,14 @@ async function handleLogin(e) {
 
 function enableGuestMode() {
     isGuest = true;
+    isLoggedIn = true; // También marcar como logueado en modo invitado
     unlockApp();
-    // Invitados pueden usar la app normalmente, pero sus datos no se guardan
 }
 
 async function unlockApp() {
     document.getElementById('login-overlay').style.display = 'none';
     document.getElementById('app-container').style.display = 'block';
 
-    // Update Banner with proper styling
     const banner = document.getElementById('loggedInBanner');
     if (banner) {
         banner.style.display = 'block';
@@ -663,11 +671,11 @@ async function unlockApp() {
         }
     }
 
-    // Inicializar App (esperar a que cargue datos de la nube)
     await initData();
 }
 
 function logout() {
+    isLoggedIn = false;
     localStorage.removeItem(AUTH_TOKEN_KEY);
     location.reload();
 }
