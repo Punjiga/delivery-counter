@@ -225,17 +225,22 @@ function agregarViaje() {
         confirmButtonText: 'Guardar',
         cancelButtonText: 'Cancelar',
         preConfirm: () => {
-            return {
-                fecha: document.getElementById('swal-fecha-viaje').value,
-                cliente: document.getElementById('swal-cliente').value,
-                precio: document.getElementById('swal-precio').value,
-                km: document.getElementById('swal-km').value
+            const fecha = document.getElementById('swal-fecha-viaje').value;
+            const cliente = document.getElementById('swal-cliente').value;
+            const precio = document.getElementById('swal-precio').value;
+            const km = document.getElementById('swal-km').value;
+
+            // Validar campos requeridos
+            if (!fecha || !cliente || !precio || !km) {
+                Swal.showValidationMessage('Todos los campos son obligatorios');
+                return false;
             }
+
+            return { fecha, cliente, precio, km };
         }
     }).then((result) => {
         if (result.isConfirmed) {
             const data = result.value;
-            if (!data.fecha) return;
 
             // Determinar tipoFechaUI
             const d = new Date(data.fecha + 'T00:00:00');
@@ -249,9 +254,9 @@ function agregarViaje() {
             const nuevoViaje = {
                 id: Date.now(),
                 fecha: data.fecha,
-                cliente: data.cliente || '',
-                precio: parseFloat(data.precio) || 0,
-                km: parseFloat(data.km) || 0,
+                cliente: data.cliente,
+                precio: parseFloat(data.precio),
+                km: parseFloat(data.km),
                 tipoFechaUI: tipoFechaUI
             };
 
@@ -384,21 +389,26 @@ function agregarGasto() {
         confirmButtonText: 'Guardar',
         cancelButtonText: 'Cancelar',
         preConfirm: () => {
-            return {
-                fecha: document.getElementById('swal-fecha').value,
-                concepto: document.getElementById('swal-concepto').value,
-                monto: document.getElementById('swal-monto').value
+            const fecha = document.getElementById('swal-fecha').value;
+            const concepto = document.getElementById('swal-concepto').value;
+            const monto = document.getElementById('swal-monto').value;
+
+            // Validar campos requeridos
+            if (!fecha || !concepto || !monto) {
+                Swal.showValidationMessage('Todos los campos son obligatorios');
+                return false;
             }
+
+            return { fecha, concepto, monto };
         }
     }).then((result) => {
         if (result.isConfirmed) {
             const data = result.value;
-            if (!data.monto || !data.fecha) return;
 
             const nuevoGasto = {
                 id: Date.now(),
                 fecha: data.fecha,
-                concepto: data.concepto || 'Gasto',
+                concepto: data.concepto,
                 monto: parseFloat(data.monto)
             };
 
@@ -616,12 +626,20 @@ async function handleLogin(e) {
         } else {
             btn.disabled = false;
             btn.innerHTML = originalText;
-            Swal.fire('Error', 'Contraseña incorrecta', 'error');
+            await Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Contraseña incorrecta'
+            });
         }
     } catch (error) {
         btn.disabled = false;
         btn.innerHTML = originalText;
-        Swal.fire('Error', 'No se pudo conectar con el servidor', 'error');
+        await Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'No se pudo conectar con el servidor'
+        });
     }
 }
 
