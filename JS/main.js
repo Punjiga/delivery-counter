@@ -19,6 +19,22 @@ function getLocalDateString(date = new Date()) {
     return `${year}-${month}-${day}`;
 }
 
+// --- TOGGLE TARIFAS ---
+function toggleTarifasLogin() {
+    const panel = document.getElementById('tarifasPanelLogin');
+    const btn = document.querySelector('.tarifas-toggle');
+    panel.classList.toggle('open');
+    btn.classList.toggle('active');
+}
+
+function toggleTarifasApp() {
+    const panel = document.getElementById('tarifasPanelApp');
+    const btn = document.querySelector('.tarifas-toggle-app');
+    panel.classList.toggle('open');
+    btn.classList.toggle('active');
+}
+
+
 // 2. Inicialización
 window.onload = function () {
     checkAuth();

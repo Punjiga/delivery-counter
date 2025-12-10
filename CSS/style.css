@@ -197,6 +197,214 @@
     color: #fff;
 }
 
+/* --- TARIFAS SECTION (LOGIN) --- */
+.tarifas-section-login {
+    margin-top: 25px;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    padding-top: 20px;
+}
+
+.tarifas-toggle {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.85);
+    padding: 12px 18px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.tarifas-toggle:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.35);
+    color: #fff;
+}
+
+.tarifas-toggle .toggle-arrow {
+    transition: transform 0.3s ease;
+}
+
+.tarifas-toggle.active .toggle-arrow {
+    transform: rotate(180deg);
+}
+
+.tarifas-panel {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease, margin-top 0.3s ease;
+    margin-top: 0;
+}
+
+.tarifas-panel.open {
+    max-height: 400px;
+    margin-top: 15px;
+}
+
+.tarifas-lista {
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tarifa-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    border-radius: 8px;
+    transition: background 0.2s ease;
+}
+
+.tarifa-item:not(:last-child) {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.tarifa-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.tarifa-item .zona {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.85rem;
+    flex: 1;
+    padding-right: 10px;
+    line-height: 1.3;
+}
+
+.tarifa-item .precio {
+    color: var(--color-principal);
+    font-weight: 700;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    background: rgba(108, 190, 209, 0.15);
+    padding: 4px 10px;
+    border-radius: 6px;
+}
+
+/* --- TARIFAS SECTION (APP) --- */
+.tarifas-section-app {
+    margin-bottom: 20px;
+}
+
+.tarifas-toggle-app {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #f1f5f9;
+    border: 1px solid var(--color-borde);
+    color: var(--color-texto-suave);
+    padding: 8px 16px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.tarifas-toggle-app:hover {
+    background: #e2e8f0;
+    color: var(--color-texto);
+}
+
+.tarifas-toggle-app .toggle-arrow {
+    transition: transform 0.3s ease;
+}
+
+.tarifas-toggle-app.active .toggle-arrow {
+    transform: rotate(180deg);
+}
+
+.tarifas-panel-app {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s ease, margin-top 0.25s ease;
+    margin-top: 0;
+}
+
+.tarifas-panel-app.open {
+    max-height: 250px;
+    margin-top: 15px;
+}
+
+.tarifas-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.tarifa-chip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #f8fafc;
+    border: 1px solid var(--color-borde);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+}
+
+.tarifa-chip:hover {
+    border-color: var(--color-principal);
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(108, 190, 209, 0.15);
+}
+
+.tarifa-chip span {
+    color: var(--color-texto);
+    line-height: 1.3;
+}
+
+.tarifa-chip strong {
+    color: var(--color-principal);
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+/* Responsive Tarifas */
+@media (max-width: 768px) {
+    .tarifa-item .zona {
+        font-size: 0.8rem;
+    }
+    
+    .tarifa-item .precio {
+        font-size: 0.85rem;
+    }
+    
+    .tarifas-grid {
+        flex-direction: column;
+    }
+    
+    .tarifa-chip {
+        justify-content: space-between;
+    }
+}
+
+@media (max-width: 480px) {
+    .tarifas-toggle {
+        font-size: 0.85rem;
+        padding: 10px 14px;
+    }
+    
+    .tarifa-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+    }
+    
+    .tarifa-item .precio {
+        align-self: flex-end;
+    }
+}
+
 /* --- LOGGED IN BANNER (Role display) --- */
 .loggedin-banner {
     display: none;
