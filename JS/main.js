@@ -49,7 +49,7 @@ async function guardarEnNube() {
             ultimaActualizacion: new Date().toISOString()
         };
 
-        await fetch('/api/sync', {
+        const res = await fetch('/api/sync', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -57,8 +57,13 @@ async function guardarEnNube() {
             },
             body: JSON.stringify(datos)
         });
+
+        if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            console.error('Error al sincronizar:', errorData.error || res.statusText);
+        }
     } catch (error) {
-        console.error('Error al sincronizar con la nube:', error);
+        console.error('Error de red al sincronizar:', error);
     }
 }
 
@@ -563,7 +568,7 @@ function renderizarGastos() {
 
 // --- AUTHENTICATION LOGIC ---
 
-function checkAuth() {
+async function checkAuth() {
     const token = localStorage.getItem(AUTH_TOKEN_KEY);
     if (!token) {
         showLoginOverlay();
@@ -584,7 +589,7 @@ function checkAuth() {
     }
 
     // Token valid
-    unlockApp();
+    await unlockApp();
 }
 
 async function handleLogin(e) {
@@ -606,15 +611,17 @@ async function handleLogin(e) {
         if (res.ok) {
             const data = await res.json();
             localStorage.setItem(AUTH_TOKEN_KEY, data.token);
-            unlockApp();
+            btn.innerHTML = 'Cargando datos...';
+            await unlockApp();
         } else {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
             Swal.fire('Error', 'Contraseña incorrecta', 'error');
         }
     } catch (error) {
-        Swal.fire('Error', 'No se pudo conectar con el servidor', 'error');
-    } finally {
         btn.disabled = false;
         btn.innerHTML = originalText;
+        Swal.fire('Error', 'No se pudo conectar con el servidor', 'error');
     }
 }
 
@@ -624,7 +631,7 @@ function enableGuestMode() {
     // Invitados pueden usar la app normalmente, pero sus datos no se guardan
 }
 
-function unlockApp() {
+async function unlockApp() {
     document.getElementById('login-overlay').style.display = 'none';
     document.getElementById('app-container').style.display = 'block';
 
@@ -641,8 +648,8 @@ function unlockApp() {
         }
     }
 
-    // Inicializar App
-    initData();
+    // Inicializar App (esperar a que cargue datos de la nube)
+    await initData();
 }
 
 function logout() {
