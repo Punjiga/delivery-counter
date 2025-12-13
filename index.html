@@ -52,43 +52,7 @@
                     Acceder como Invitado / Prueba
                 </button>
             </div>
-            <!-- Tarifas Panel en Login -->
-            <div class="tarifas-section-login">
-                <button class="tarifas-toggle" onclick="toggleTarifasLogin()">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-                    </svg>
-                    Ver Tarifas por Zona
-                    <svg class="toggle-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2">
-                        <polyline points="6 9 12 15 18 9"></polyline>
-                    </svg>
-                </button>
-                <div id="tarifasPanelLogin" class="tarifas-panel">
-                    <div class="tarifas-lista">
-                        <div class="tarifa-item">
-                            <span class="zona">San Marcos Centro, Las Tres Marias, La Recta</span>
-                            <span class="precio">₡1000</span>
-                        </div>
-                        <div class="tarifa-item">
-                            <span class="zona">Santa Cecilia</span>
-                            <span class="precio">₡1500</span>
-                        </div>
-                        <div class="tarifa-item">
-                            <span class="zona">El Rodeo, La Sabana, San Pablo Centro, Guadalupe</span>
-                            <span class="precio">₡2000</span>
-                        </div>
-                        <div class="tarifa-item">
-                            <span class="zona">San Lorenzo, San Pedro</span>
-                            <span class="precio">₡2500</span>
-                        </div>
-                        <div class="tarifa-item">
-                            <span class="zona">Santa Maria Centro, Santa Marta</span>
-                            <span class="precio">₡3000</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+
         </div>
     </div>
 
@@ -164,6 +128,13 @@
                 <option value="todas">Ver Mes Completo</option>
             </select>
         </div>
+        <!-- Filtro por Día -->
+        <div class="filtro-dia-container">
+            <label for="selectorDia" class="filtro-dia-label">Filtrar por día:</label>
+            <select id="selectorDia" class="selector-dia" onchange="cambiarDia(this.value)">
+                <option value="todos">Todos los días</option>
+            </select>
+        </div>
         <!-- Botón Agregar Nuevo -->
         <div class="acciones-principales"
             style="display: flex; gap: 10px; justify-content: flex-end; margin-bottom: 15px;">
@@ -197,12 +168,17 @@
             </button>
             <div id="tarifasPanelApp" class="tarifas-panel-app">
                 <div class="tarifas-grid">
-                    <div class="tarifa-chip"><span>San Marcos, Tres Marias, La Recta</span><strong>₡1000</strong></div>
-                    <div class="tarifa-chip"><span>Santa Cecilia</span><strong>₡1500</strong></div>
-                    <div class="tarifa-chip"><span>El Rodeo, La Sabana, San Pablo,
-                            Guadalupe</span><strong>₡2000</strong></div>
-                    <div class="tarifa-chip"><span>San Lorenzo, San Pedro</span><strong>₡2500</strong></div>
-                    <div class="tarifa-chip"><span>Santa Maria Centro, Santa Marta</span><strong>₡3000</strong></div>
+                    <div class="tarifa-chip"><span>San Marcos, Tres Marías, La Recta</span><em>1.0
+                            km</em><strong>₡1000</strong></div>
+                    <div class="tarifa-chip"><span>Santa Cecilia</span><em>1.2 km</em><strong>₡1500</strong></div>
+                    <div class="tarifa-chip"><span>El Rodeo</span><em>2.1 km</em><strong>₡2000</strong></div>
+                    <div class="tarifa-chip"><span>La Sabana</span><em>3.0 km</em><strong>₡2000</strong></div>
+                    <div class="tarifa-chip"><span>San Pablo</span><em>3.4 km</em><strong>₡2000</strong></div>
+                    <div class="tarifa-chip"><span>Guadalupe</span><em>3.0 km</em><strong>₡2000</strong></div>
+                    <div class="tarifa-chip"><span>San Lorenzo</span><em>4.6 km</em><strong>₡2500</strong></div>
+                    <div class="tarifa-chip"><span>San Pedro</span><em>6.3 km</em><strong>₡2500</strong></div>
+                    <div class="tarifa-chip"><span>Santa María</span><em>7.1 km</em><strong>₡3000</strong></div>
+                    <div class="tarifa-chip"><span>Santa Marta</span><em>6.3 km</em><strong>₡3000</strong></div>
                 </div>
             </div>
         </div>

@@ -4,6 +4,7 @@
 let listaViajes = [];
 let fechaVisualizacion = new Date(); // Fecha de referencia para el mes que se está VIENDO
 let semanaActual = 'todas'; // 'todas', 1, 2, 3, 4, 5
+let diaActual = 'todos'; // 'todos' o fecha string 'YYYY-MM-DD'
 const STORAGE_KEY = 'datosConductor_v4';
 let listaGastos = [];
 const STORAGE_KEY_GASTOS = 'datosConductor_v4_gastos';
@@ -20,12 +21,7 @@ function getLocalDateString(date = new Date()) {
 }
 
 // --- TOGGLE TARIFAS ---
-function toggleTarifasLogin() {
-    const panel = document.getElementById('tarifasPanelLogin');
-    const btn = document.querySelector('.tarifas-toggle');
-    panel.classList.toggle('open');
-    btn.classList.toggle('active');
-}
+
 
 function toggleTarifasApp() {
     const panel = document.getElementById('tarifasPanelApp');
@@ -189,6 +185,7 @@ function actualizarBotonesSemana(nombreMes) {
 // 4. Filtros de Semana
 function cambiarSemana(semana) {
     semanaActual = semana;
+    diaActual = 'todos'; // Reset day filter when changing week
 
     // Actualizar UI botones
     document.querySelectorAll('.boton-semana').forEach(btn => btn.classList.remove('activo'));
@@ -208,7 +205,58 @@ function cambiarSemana(semana) {
     const botones = document.querySelectorAll('.boton-semana');
     if (botones[index]) botones[index].classList.add('activo');
 
+    actualizarSelectorDias(); // Update day options
     actualizarVista();
+}
+
+// Filtro por Día
+function cambiarDia(dia) {
+    diaActual = dia;
+    actualizarVista();
+}
+
+function actualizarSelectorDias() {
+    const selector = document.getElementById('selectorDia');
+    if (!selector) return;
+
+    // Obtener viajes filtrados por mes y semana actual
+    const mesVisto = fechaVisualizacion.getMonth();
+    const anioVisto = fechaVisualizacion.getFullYear();
+
+    let viajesFiltrados = listaViajes.filter(v => {
+        const d = new Date(v.fecha + 'T00:00:00');
+        return d.getMonth() === mesVisto && d.getFullYear() === anioVisto;
+    });
+
+    if (semanaActual !== 'todas') {
+        viajesFiltrados = viajesFiltrados.filter(v => getSemanaDelMes(v.fecha) === semanaActual);
+    }
+
+    // Obtener fechas únicas con datos
+    const fechasUnicas = [...new Set(viajesFiltrados.map(v => v.fecha))].sort();
+
+    // Limpiar y reconstruir opciones
+    selector.innerHTML = '<option value="todos">Todos los días</option>';
+
+    fechasUnicas.forEach(fecha => {
+        const d = new Date(fecha + 'T00:00:00');
+        const nombreDia = d.toLocaleDateString('es-ES', { weekday: 'long' });
+        const nombreDiaCap = nombreDia.charAt(0).toUpperCase() + nombreDia.slice(1);
+        const numeroDia = d.getDate();
+
+        const option = document.createElement('option');
+        option.value = fecha;
+        option.textContent = `${nombreDiaCap} ${numeroDia}`;
+        selector.appendChild(option);
+    });
+
+    // Restaurar selección si todavía existe
+    if (diaActual !== 'todos' && fechasUnicas.includes(diaActual)) {
+        selector.value = diaActual;
+    } else {
+        diaActual = 'todos';
+        selector.value = 'todos';
+    }
 }
 
 function getSemanaDelMes(fechaStr) {
@@ -281,6 +329,7 @@ function agregarViaje() {
             // Si la fecha seleccionada es del mes actual o diferente, 
             // actualizamos la vista actual. Si el usuario agregó una fecha 
             // de otro mes, no se verá hasta que cambie de mes.
+            actualizarSelectorDias(); // Actualizar filtro de días
             actualizarVista();
             guardar();
         }
@@ -298,6 +347,7 @@ window.borrarViaje = function (id) {
     }).then((result) => {
         if (result.isConfirmed) {
             listaViajes = listaViajes.filter(v => v.id !== id);
+            actualizarSelectorDias(); // Actualizar filtro de días
             actualizarVista();
             guardar();
         }
@@ -330,6 +380,7 @@ window.actualizarDato = function (id, campo, valor) {
         else if (esAyer) viaje.tipoFechaUI = 'ayer';
         else viaje.tipoFechaUI = 'custom';
 
+        actualizarSelectorDias(); // Update day filters
         actualizarVista();
     } else if (campo === 'tipoFechaUI') {
         // Manejar lógica del dropdown
@@ -346,6 +397,7 @@ window.actualizarDato = function (id, campo, valor) {
             viaje.tipoFechaUI = 'custom';
             // No cambiamos la fecha aun, dejamos que el input date lo haga
         }
+        actualizarSelectorDias(); // Update day filters
         actualizarVista();
     }
     // Si solo es cliente/precio/km, no hace falta re-renderizar todo, pero totales sí
@@ -453,6 +505,11 @@ function actualizarVista() {
         viajesFiltrados = viajesFiltrados.filter(v => getSemanaDelMes(v.fecha) === semanaActual);
     }
 
+    // Filtro por día específico
+    if (diaActual !== 'todos') {
+        viajesFiltrados = viajesFiltrados.filter(v => v.fecha === diaActual);
+    }
+
     // Ordenar por fecha descendente (más reciente primero) o ascendente?
     // Generalmente registro de viajes es cronológico.
     // Ordenar por fecha ASCENDENTE (del 1 al 31)
@@ -547,6 +604,11 @@ function renderizarGastos() {
 
     if (semanaActual !== 'todas') {
         gastosFiltrados = gastosFiltrados.filter(g => getSemanaDelMes(g.fecha) === semanaActual);
+    }
+
+    // Filtro por día específico
+    if (diaActual !== 'todos') {
+        gastosFiltrados = gastosFiltrados.filter(g => g.fecha === diaActual);
     }
 
     gastosFiltrados.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));

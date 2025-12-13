@@ -174,9 +174,26 @@
 }
 
 @keyframes shakeError {
-    0%, 100% { transform: translateX(0); }
-    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-    20%, 40%, 60%, 80% { transform: translateX(5px); }
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    10%,
+    30%,
+    50%,
+    70%,
+    90% {
+        transform: translateX(-5px);
+    }
+
+    20%,
+    40%,
+    60%,
+    80% {
+        transform: translateX(5px);
+    }
 }
 
 .boton-guest {
@@ -197,97 +214,7 @@
     color: #fff;
 }
 
-/* --- TARIFAS SECTION (LOGIN) --- */
-.tarifas-section-login {
-    margin-top: 25px;
-    border-top: 1px solid rgba(255, 255, 255, 0.15);
-    padding-top: 20px;
-}
 
-.tarifas-toggle {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: rgba(255, 255, 255, 0.85);
-    padding: 12px 18px;
-    font-size: 0.9rem;
-    font-weight: 500;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.tarifas-toggle:hover {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.35);
-    color: #fff;
-}
-
-.tarifas-toggle .toggle-arrow {
-    transition: transform 0.3s ease;
-}
-
-.tarifas-toggle.active .toggle-arrow {
-    transform: rotate(180deg);
-}
-
-.tarifas-panel {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.4s ease, margin-top 0.3s ease;
-    margin-top: 0;
-}
-
-.tarifas-panel.open {
-    max-height: 400px;
-    margin-top: 15px;
-}
-
-.tarifas-lista {
-    background: rgba(255, 255, 255, 0.06);
-    border-radius: 12px;
-    padding: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.tarifa-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 12px;
-    border-radius: 8px;
-    transition: background 0.2s ease;
-}
-
-.tarifa-item:not(:last-child) {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.tarifa-item:hover {
-    background: rgba(255, 255, 255, 0.05);
-}
-
-.tarifa-item .zona {
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 0.85rem;
-    flex: 1;
-    padding-right: 10px;
-    line-height: 1.3;
-}
-
-.tarifa-item .precio {
-    color: var(--color-principal);
-    font-weight: 700;
-    font-size: 0.95rem;
-    white-space: nowrap;
-    background: rgba(108, 190, 209, 0.15);
-    padding: 4px 10px;
-    border-radius: 6px;
-}
 
 /* --- TARIFAS SECTION (APP) --- */
 .tarifas-section-app {
@@ -330,7 +257,7 @@
 }
 
 .tarifas-panel-app.open {
-    max-height: 250px;
+    max-height: 450px;
     margin-top: 15px;
 }
 
@@ -369,20 +296,33 @@
     white-space: nowrap;
 }
 
+/* Distance badge in tarifa-chip (app) */
+.tarifa-chip em {
+    font-style: normal;
+    font-size: 0.75rem;
+    color: var(--color-texto-suave);
+    background: #e2e8f0;
+    padding: 2px 8px;
+    border-radius: 10px;
+    white-space: nowrap;
+}
+
+
+
 /* Responsive Tarifas */
 @media (max-width: 768px) {
     .tarifa-item .zona {
         font-size: 0.8rem;
     }
-    
+
     .tarifa-item .precio {
         font-size: 0.85rem;
     }
-    
+
     .tarifas-grid {
         flex-direction: column;
     }
-    
+
     .tarifa-chip {
         justify-content: space-between;
     }
@@ -393,13 +333,13 @@
         font-size: 0.85rem;
         padding: 10px 14px;
     }
-    
+
     .tarifa-item {
         flex-direction: column;
         align-items: flex-start;
         gap: 6px;
     }
-    
+
     .tarifa-item .precio {
         align-self: flex-end;
     }
@@ -694,6 +634,49 @@ header {
     cursor: pointer;
 }
 
+/* --- FILTRO POR DÍA --- */
+.filtro-dia-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding: 10px 15px;
+    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+    border-radius: 10px;
+    border: 1px solid var(--color-borde);
+}
+
+.filtro-dia-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-texto-suave);
+    white-space: nowrap;
+}
+
+.selector-dia {
+    flex: 1;
+    max-width: 200px;
+    padding: 10px 14px;
+    font-size: 0.95rem;
+    border: 1px solid var(--color-borde);
+    border-radius: 8px;
+    background-color: white;
+    color: var(--color-texto);
+    font-weight: 500;
+    outline: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.selector-dia:hover {
+    border-color: var(--color-principal);
+}
+
+.selector-dia:focus {
+    border-color: var(--color-principal);
+    box-shadow: 0 0 0 3px rgba(108, 190, 209, 0.15);
+}
+
 /* --- BOTONES DE ACCIÓN --- */
 .boton {
     padding: 12px 24px;
@@ -978,6 +961,14 @@ td {
         margin-left: 0;
         padding: 10px 18px;
         font-size: 0.95rem;
+    }
+
+    .filtro-dia-container {
+        justify-content: center;
+    }
+
+    .selector-dia {
+        max-width: none;
     }
 }
 
