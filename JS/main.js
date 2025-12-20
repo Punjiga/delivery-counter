@@ -219,21 +219,32 @@ function actualizarSelectorDias() {
     const selector = document.getElementById('selectorDia');
     if (!selector) return;
 
-    // Obtener viajes filtrados por mes y semana actual
+    // Obtener viajes y gastos filtrados por mes y semana actual
     const mesVisto = fechaVisualizacion.getMonth();
     const anioVisto = fechaVisualizacion.getFullYear();
 
+    // Filtrar viajes por mes/año
     let viajesFiltrados = listaViajes.filter(v => {
         const d = new Date(v.fecha + 'T00:00:00');
         return d.getMonth() === mesVisto && d.getFullYear() === anioVisto;
     });
 
+    // Filtrar gastos por mes/año
+    let gastosFiltrados = listaGastos.filter(g => {
+        const d = new Date(g.fecha + 'T00:00:00');
+        return d.getMonth() === mesVisto && d.getFullYear() === anioVisto;
+    });
+
+    // Aplicar filtro de semana si corresponde
     if (semanaActual !== 'todas') {
         viajesFiltrados = viajesFiltrados.filter(v => getSemanaDelMes(v.fecha) === semanaActual);
+        gastosFiltrados = gastosFiltrados.filter(g => getSemanaDelMes(g.fecha) === semanaActual);
     }
 
-    // Obtener fechas únicas con datos
-    const fechasUnicas = [...new Set(viajesFiltrados.map(v => v.fecha))].sort();
+    // Obtener fechas únicas de VIAJES Y GASTOS combinados
+    const fechasViajes = viajesFiltrados.map(v => v.fecha);
+    const fechasGastos = gastosFiltrados.map(g => g.fecha);
+    const fechasUnicas = [...new Set([...fechasViajes, ...fechasGastos])].sort();
 
     // Limpiar y reconstruir opciones
     selector.innerHTML = '<option value="todos">Todos los días</option>';
@@ -417,6 +428,7 @@ window.borrarGasto = function (id) {
     }).then((result) => {
         if (result.isConfirmed) {
             listaGastos = listaGastos.filter(g => g.id !== id);
+            actualizarSelectorDias(); // Actualizar filtro de días
             actualizarVista();
             guardar();
         }
@@ -438,6 +450,7 @@ window.actualizarGasto = function (id, campo, valor) {
 
     // Si cambiamos la fecha, podría afectar filtros
     if (campo === 'fecha') {
+        actualizarSelectorDias(); // Actualizar filtro de días
         actualizarVista();
     } else {
         calcularTotales();
@@ -481,6 +494,7 @@ function agregarGasto() {
             };
 
             listaGastos.push(nuevoGasto);
+            actualizarSelectorDias(); // Actualizar filtro de días
             actualizarVista();
             guardar();
         }
