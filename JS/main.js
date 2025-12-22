@@ -399,10 +399,10 @@ window.actualizarDato = function (id, campo, valor) {
         const ayer = new Date(); ayer.setDate(ayer.getDate() - 1);
 
         if (valor === 'hoy') {
-            viaje.fecha = hoy.toISOString().split('T')[0];
+            viaje.fecha = getLocalDateString(hoy);
             viaje.tipoFechaUI = 'hoy';
         } else if (valor === 'ayer') {
-            viaje.fecha = ayer.toISOString().split('T')[0];
+            viaje.fecha = getLocalDateString(ayer);
             viaje.tipoFechaUI = 'ayer';
         } else if (valor === 'custom') {
             viaje.tipoFechaUI = 'custom';
@@ -1029,11 +1029,8 @@ function generarPDF() {
 
         // Nombre dinámico del PDF según filtro activo
         const tituloOriginal = document.title;
-        const nombreMes = fechaVisualizacion.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
-        const nombreMesCap = nombreMes.charAt(0).toUpperCase() + nombreMes.slice(1);
-        document.title = semanaActual !== 'todas'
-            ? `Registro Delivery - Semana ${semanaActual} ${nombreMesCap}`
-            : `Registro Delivery - ${nombreMesCap}`;
+        const rangoSemana = getTextoRangoSemana(semanaActual);
+        document.title = `Registro Delivery - ${rangoSemana}`;
 
         setTimeout(() => {
             window.print();
