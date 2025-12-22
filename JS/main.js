@@ -855,13 +855,16 @@ function calcularTotales(viajesYaFiltrados) {
         }
     }
 
-    // 2. Filtrar Gastos (Egresos) - Misma lógica de filtro
+    // 2. Filtrar Gastos (Egresos) - Misma lógica de filtro que viajes
     let gastos = listaGastos.filter(g => {
         const d = new Date(g.fecha + 'T00:00:00');
         return d.getMonth() === mesVisto && d.getFullYear() === anioVisto;
     });
     if (semanaActual !== 'todas') {
         gastos = gastos.filter(g => getSemanaDelMes(g.fecha) === semanaActual);
+    }
+    if (diaActual !== 'todos') {
+        gastos = gastos.filter(g => g.fecha === diaActual);
     }
 
     // 3. Calcular Sumas
@@ -1024,8 +1027,17 @@ function generarPDF() {
             if (cardGanancia) cardGanancia.style.display = 'none';
         }
 
+        // Nombre dinámico del PDF según filtro activo
+        const tituloOriginal = document.title;
+        const nombreMes = fechaVisualizacion.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+        const nombreMesCap = nombreMes.charAt(0).toUpperCase() + nombreMes.slice(1);
+        document.title = semanaActual !== 'todas'
+            ? `Registro Delivery - Semana ${semanaActual} ${nombreMesCap}`
+            : `Registro Delivery - ${nombreMesCap}`;
+
         setTimeout(() => {
             window.print();
+            document.title = tituloOriginal;
 
             // Restaurar visibilidad
             if (!incluirGastos) {
