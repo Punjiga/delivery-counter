@@ -32,86 +32,7 @@
 
 /* ... existing body and transitions ... */
 
-/* Update specific components to use variables */
 
-.navegacion-mes {
-    /* ... */
-    background: var(--color-fondo-panel);
-}
-
-.boton-nav-mes {
-    /* ... */
-    background: var(--color-fondo-elemento);
-}
-
-.boton-nav-today {
-    background: var(--color-fondo-elemento);
-}
-
-.boton-nav-today:hover {
-    background: var(--color-hover);
-}
-
-.barra-semanas {
-    background-color: var(--color-fondo-panel);
-}
-
-.boton-semana:hover {
-    background-color: var(--color-hover);
-}
-
-.boton-semana.activo {
-    background-color: var(--color-fondo-elemento);
-}
-
-.selector-semana-mobile {
-    background-color: var(--color-fondo-elemento);
-}
-
-.filtro-dia-container {
-    background: var(--color-fondo-panel);
-    border: 1px solid var(--color-borde);
-}
-
-.selector-dia {
-    background-color: var(--color-fondo-elemento);
-}
-
-/* Update Table Headers */
-th {
-    background-color: var(--color-fondo-panel);
-    color: var(--color-texto-suave);
-    border-bottom: 1px solid var(--color-borde);
-}
-
-/* Update Table Inputs */
-.input-tabla {
-    background: var(--color-fondo-elemento);
-    border: 1px solid var(--color-borde);
-    color: var(--color-texto);
-}
-
-/* Update Tarifas Toggle App */
-.tarifas-toggle-app {
-    background: var(--color-fondo-panel);
-    color: var(--color-texto-suave);
-}
-
-.tarifas-toggle-app:hover {
-    background: var(--color-hover);
-}
-
-.tarifa-chip {
-    background: var(--color-fondo-panel);
-}
-
-.tarifa-chip:hover {
-    background: var(--color-fondo-elemento);
-}
-
-.tarifa-chip em {
-    background: var(--color-hover);
-}
 
 
 body {
@@ -436,7 +357,7 @@ input:checked+.slider:before {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    background: #f1f5f9;
+    background: var(--color-fondo-panel);
     border: 1px solid var(--color-borde);
     color: var(--color-texto-suave);
     padding: 8px 16px;
@@ -482,7 +403,7 @@ input:checked+.slider:before {
     display: flex;
     align-items: center;
     gap: 10px;
-    background: #f8fafc;
+    background: var(--color-fondo-panel);
     border: 1px solid var(--color-borde);
     border-radius: 8px;
     padding: 10px 14px;
@@ -656,7 +577,7 @@ header {
     display: flex;
     align-items: center;
     gap: 8px;
-    background: #f1f5f9;
+    background: var(--color-fondo-panel);
     padding: 5px;
     border-radius: 8px;
 }
@@ -668,7 +589,7 @@ header {
     width: 32px;
     height: 32px;
     border: none;
-    background: white;
+    background: var(--color-fondo-elemento);
     border-radius: 6px;
     cursor: pointer;
     color: var(--color-texto);
@@ -687,7 +608,7 @@ header {
     padding: 0 12px;
     height: 32px;
     border: none;
-    background: white;
+    background: var(--color-fondo-elemento);
     border-radius: 6px;
     cursor: pointer;
     color: var(--color-texto);
@@ -791,7 +712,7 @@ header {
 /* --- BARRA DE PESTAÑAS (SEMANAS) --- */
 .barra-semanas {
     display: flex;
-    background-color: #e2e8f0;
+    background-color: var(--color-fondo-panel);
     padding: 5px;
     border-radius: 10px;
     margin-bottom: 25px;
@@ -852,7 +773,7 @@ header {
     gap: 12px;
     margin-bottom: 20px;
     padding: 10px 15px;
-    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+    background: var(--color-fondo-panel);
     border-radius: 10px;
     border: 1px solid var(--color-borde);
 }
@@ -970,7 +891,7 @@ table {
 }
 
 th {
-    background-color: #f8fafc;
+    background-color: var(--color-fondo-panel);
     text-align: left;
     padding: 15px;
     color: var(--color-texto-suave);
@@ -1033,7 +954,7 @@ td {
 }
 
 .tarjeta-total {
-    background-color: #f8fafc;
+    background-color: var(--color-fondo-tarjeta);
     padding: 20px;
     border-radius: 10px;
     border-left: 5px solid var(--color-texto-suave);
@@ -1232,7 +1153,7 @@ td {
 
     tr {
         margin-bottom: 20px;
-        background-color: #fff;
+        background-color: var(--color-fondo-tarjeta);
         border: 1px solid var(--color-borde);
         border-radius: 12px;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
@@ -1241,7 +1162,7 @@ td {
 
     td {
         border: none;
-        border-bottom: 1px solid #f1f5f9;
+        border-bottom: 1px solid var(--color-borde);
         position: relative;
         padding-left: 45%;
         padding-top: 12px;
@@ -1275,12 +1196,12 @@ td {
     .input-tabla {
         text-align: center;
         /* CENTRADO solicitado */
-        border: 1px solid #eee;
-        background: #fafafa;
+        border: 1px solid var(--color-borde);
+        background: var(--color-fondo-panel);
     }
 
     .input-tabla:focus {
-        background: #fff;
+        background: var(--color-fondo-elemento);
     }
 
     /* Los controles de fecha (dropdowns) necesitan ajuste */
@@ -1453,6 +1374,8 @@ td {
     max-width: 100% !important;
     box-sizing: border-box !important;
     margin: 0.5rem 0 !important;
+    background: var(--color-input) !important;
+    color: var(--color-texto) !important;
 }
 
 .swal2-input:focus,
