@@ -143,6 +143,27 @@ input:checked+.slider:before {
     color: #e2e8f0 !important;
 }
 
+/* --- DARK MODE CONTRAST FIXES --- */
+[data-theme="dark"] .tarifas-toggle-app:hover {
+    background: #334155;
+    color: #ffffff;
+}
+
+[data-theme="dark"] .tarifa-chip:hover {
+    background: #334155;
+    border-color: var(--color-principal);
+}
+
+[data-theme="dark"] .tarifa-chip em {
+    background: #475569;
+    color: #e2e8f0;
+}
+
+[data-theme="dark"] .boton-semana:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: var(--color-principal) !important;
+}
+
 [data-theme="dark"] .swal2-input,
 [data-theme="dark"] .swal2-textarea {
     color: #e2e8f0 !important;
