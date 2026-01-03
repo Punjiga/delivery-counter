@@ -35,7 +35,41 @@ function toggleTarifasApp() {
 window.onload = function () {
     checkAuth();
     // Note: Initialization moved to initData() called after auth
+    initTheme();
+
+    const toggleSwitch = document.querySelector('.theme-switch input[type="checkbox"]');
+    if (toggleSwitch) {
+        toggleSwitch.addEventListener('change', switchTheme, false);
+    }
 };
+
+function initTheme() {
+    const currentTheme = localStorage.getItem('theme');
+    const toggleSwitch = document.querySelector('.theme-switch input[type="checkbox"]');
+
+    if (currentTheme) {
+        document.documentElement.setAttribute('data-theme', currentTheme);
+        if (currentTheme === 'dark') {
+            if (toggleSwitch) toggleSwitch.checked = true;
+        }
+    } else {
+        // Check system preference
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            if (toggleSwitch) toggleSwitch.checked = true;
+        }
+    }
+}
+
+function switchTheme(e) {
+    if (e.target.checked) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        localStorage.setItem('theme', 'dark');
+    } else {
+        document.documentElement.setAttribute('data-theme', 'light');
+        localStorage.setItem('theme', 'light');
+    }
+}
 
 function guardar() {
     // Solo guardar en localStorage si es admin (no invitado)
