@@ -18,9 +18,11 @@
     --color-principal: #6cbed1;
     --color-fondo: #0f172a;
     --color-blanco: #1e293b;
-    --color-texto: #e2e8f0;
-    --color-texto-suave: #94a3b8;
-    --color-borde: #334155;
+    --color-texto: #f1f5f9;
+    --color-texto-suave: #cbd5e1;
+    /* Lighter for better contrast (WCAG AA) */
+    --color-borde: #475569;
+    /* Increased visibility */
     --color-peligro: #ef4444;
     --color-exito: #22c55e;
     --color-fondo-tarjeta: #1e293b;
@@ -730,105 +732,127 @@ header {
     margin-bottom: 4px;
 }
 
-/* --- BARRA DE PESTAÑAS (SEMANAS) --- */
-.barra-semanas {
+/* --- CONTROL BAR (NUEVA BARRA DE FECHAS) --- */
+.control-bar-wrapper {
     display: flex;
-    background-color: var(--color-fondo-panel);
-    padding: 5px;
-    border-radius: 10px;
-    margin-bottom: 25px;
-    gap: 5px;
-    overflow-x: auto;
-    /* Permite scroll si no caben */
-    white-space: nowrap;
-    /* Evita que rompan línea */
-    -webkit-overflow-scrolling: touch;
-    /* Scroll suave en iOS */
-}
-
-.boton-semana {
-    flex: 1;
-    padding: 12px;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--color-texto-suave);
-    border-radius: 8px;
-    transition: all 0.2s;
-    min-width: 140px;
-    /* Ancho mínimo para que no se aplasten */
-}
-
-.boton-semana:hover {
-    background-color: rgba(255, 255, 255, 0.5);
-    color: var(--color-principal);
-}
-
-.boton-semana.activo {
-    background-color: var(--color-blanco);
-    color: var(--color-principal);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-/* Dropdown oculto por defecto (Desktop) */
-.selector-semana-mobile {
-    display: none;
-    width: 100%;
-    padding: 12px;
-    font-size: 1rem;
-    border: 2px solid var(--color-principal);
-    border-radius: 8px;
-    background-color: white;
-    color: var(--color-texto);
-    font-weight: 600;
-    outline: none;
-    cursor: pointer;
-}
-
-/* --- FILTRO POR DÍA --- */
-.filtro-dia-container {
-    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
     align-items: center;
-    gap: 12px;
-    margin-bottom: 20px;
-    padding: 10px 15px;
-    background: var(--color-fondo-panel);
-    border-radius: 10px;
+    background-color: var(--color-fondo-panel);
+    padding: 15px;
+    border-radius: 12px;
+    margin-bottom: 25px;
     border: 1px solid var(--color-borde);
 }
 
-.filtro-dia-label {
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--color-texto-suave);
-    white-space: nowrap;
+.control-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    align-items: center;
+    flex: 1;
 }
 
-.selector-dia {
-    flex: 1;
-    max-width: 200px;
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.filter-group label {
+    font-weight: 600;
+    color: var(--color-texto-suave);
+    font-size: 0.9rem;
+}
+
+.custom-date-group {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.date-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.date-input-wrapper label {
+    font-size: 0.85rem;
+    color: var(--color-texto-suave);
+}
+
+.input-control {
     padding: 10px 14px;
     font-size: 0.95rem;
     border: 1px solid var(--color-borde);
     border-radius: 8px;
-    background-color: white;
+    background-color: var(--color-fondo-elemento);
     color: var(--color-texto);
     font-weight: 500;
     outline: none;
-    cursor: pointer;
     transition: all 0.2s ease;
+    min-width: 140px;
 }
 
-.selector-dia:hover {
-    border-color: var(--color-principal);
-}
-
-.selector-dia:focus {
+.input-control:focus {
     border-color: var(--color-principal);
     box-shadow: 0 0 0 3px rgba(108, 190, 209, 0.15);
 }
+
+.filtro-dia-simple {
+    min-width: 200px;
+}
+
+/* Dark Mode Adjustments for new controls */
+[data-theme="dark"] .input-control {
+    background-color: var(--color-input);
+    color: var(--color-texto);
+}
+
+/* Responsive Control Bar */
+@media (max-width: 768px) {
+    .control-bar-wrapper {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 20px;
+    }
+
+    .control-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 15px;
+    }
+
+    .filter-group {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+
+    .filter-group label {
+        font-size: 0.85rem;
+    }
+
+    .input-control {
+        width: 100%;
+    }
+
+    .custom-date-group {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+
+    .date-input-wrapper {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+}
+
 
 /* --- BOTONES DE ACCIÓN --- */
 .boton {

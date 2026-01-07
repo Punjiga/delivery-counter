@@ -62,26 +62,10 @@
 
         <!-- Encabezado -->
         <header>
-            <div class="titulo-seccion">
-                <h1 id="tituloMes" style="margin: 0; font-size: 2rem; text-transform: capitalize;">Noviembre 2025</h1>
-                <div class="navegacion-mes" style="display: flex; gap: 10px; align-items: center;">
-                    <button class="boton-nav-mes" onclick="cambiarMes(-1)" title="Mes Anterior">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <polyline points="15 18 9 12 15 6"></polyline>
-                        </svg>
-                    </button>
-                    <button class="boton-nav-mes" onclick="cambiarMes(1)" title="Mes Siguiente">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <polyline points="9 18 15 12 9 6"></polyline>
-                        </svg>
-                    </button>
-                    <button class="boton-nav-today" onclick="irAlMesActual()" title="Ir al Mes Actual"
-                        style="padding: 5px 10px; border-radius: 8px; border: 1px solid var(--color-borde); background: var(--color-fondo-tarjeta); cursor: pointer; color: var(--color-texto);">
-                        Hoy
-                    </button>
-                </div>
+            <h1 id="tituloMes" style="margin: 0; font-size: 1.5rem;">Panel de Control</h1>
+            <div class="current-range-display" id="rangeDisplay"
+                style="font-size: 0.9rem; color: var(--color-texto-suave); margin-top: 5px;">
+                Cargando fecha...
             </div>
 
             <div style="display: flex; gap: 10px; align-items: center;">
@@ -108,15 +92,29 @@
                         <line x1="21" y1="12" x2="9" y2="12"></line>
                     </svg>
                 </button>
-                 <div class="theme-switch-wrapper">
+                <div class="theme-switch-wrapper">
                     <label class="theme-switch" for="checkbox-theme">
                         <input type="checkbox" id="checkbox-theme" />
                         <div class="slider round">
                             <span class="icon icon-sun">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="5"></circle>
+                                    <line x1="12" y1="1" x2="12" y2="3"></line>
+                                    <line x1="12" y1="21" x2="12" y2="23"></line>
+                                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                                    <line x1="1" y1="12" x2="3" y2="12"></line>
+                                    <line x1="21" y1="12" x2="23" y2="12"></line>
+                                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                                </svg>
                             </span>
                             <span class="icon icon-moon">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                                </svg>
                             </span>
                         </div>
                     </label>
@@ -124,30 +122,41 @@
             </div>
         </header>
         <!-- Navegación por Semanas -->
-        <div class="barra-semanas">
-            <!-- Botones para Desktop -->
-            <button class="boton-semana activo" onclick="cambiarSemana(1)">Semana 1</button>
-            <button class="boton-semana" onclick="cambiarSemana(2)">Semana 2</button>
-            <button class="boton-semana" onclick="cambiarSemana(3)">Semana 3</button>
-            <button class="boton-semana" onclick="cambiarSemana(4)">Semana 4</button>
-            <button class="boton-semana" onclick="cambiarSemana('todas')">Ver Mes Completo</button>
+        <!-- Nueva Barra de Controles de Fecha (Intervalos Dinámicos) -->
+        <div class="control-bar-wrapper">
+            <div class="control-bar">
+                <div class="filter-group">
+                    <label for="datePreset">Ver:</label>
+                    <select id="datePreset" class="input-control" onchange="handlePresetChange(this.value)">
+                        <option value="today">Hoy</option>
+                        <option value="week">Semana Actual</option>
+                        <option value="month" selected>Mes Actual</option>
+                        <option value="custom">Personalizado</option>
+                    </select>
+                </div>
 
-            <!-- Select para Mobile (se muestra solo en pantallas pequeñas por CSS) -->
-            <select id="selectorSemanaMobile" class="selector-semana-mobile" onchange="cambiarSemana(this.value)">
-                <option value="1">Semana 1</option>
-                <option value="2">Semana 2</option>
-                <option value="3">Semana 3</option>
-                <option value="4">Semana 4</option>
-                <option value="todas">Ver Mes Completo</option>
-            </select>
+                <div id="customDateRange" class="custom-date-group" style="display: none;">
+                    <div class="date-input-wrapper">
+                        <label>Desde:</label>
+                        <input type="date" id="startDate" class="input-control date-picker"
+                            onchange="handleCustomDateChange()">
+                    </div>
+                    <div class="date-input-wrapper">
+                        <label>Hasta:</label>
+                        <input type="date" id="endDate" class="input-control date-picker"
+                            onchange="handleCustomDateChange()">
+                    </div>
+                </div>
+            </div>
+            <!-- Filtro por día (Re-styled) -->
+            <div class="filtro-dia-simple">
+                <select id="selectorDia" class="input-control" onchange="cambiarDia(this.value)">
+                    <option value="todos">Todos los días</option>
+                </select>
+            </div>
         </div>
         <!-- Filtro por Día -->
-        <div class="filtro-dia-container">
-            <label for="selectorDia" class="filtro-dia-label">Filtrar por día:</label>
-            <select id="selectorDia" class="selector-dia" onchange="cambiarDia(this.value)">
-                <option value="todos">Todos los días</option>
-            </select>
-        </div>
+
         <!-- Botón Agregar Nuevo -->
         <div class="acciones-principales"
             style="display: flex; gap: 10px; justify-content: flex-end; margin-bottom: 15px;">
