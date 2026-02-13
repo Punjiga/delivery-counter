@@ -109,10 +109,9 @@ async function initData() {
         return;
     }
 
-    // Modo Administrador: Sincronizar
     Swal.fire({
         title: 'Sincronizando...',
-        text: 'Conectando con la nube...',
+        text: 'Obteniendo datos de la nube...',
         allowOutsideClick: false,
         didOpen: () => { Swal.showLoading(); }
     });
@@ -121,7 +120,6 @@ async function initData() {
         const datosNube = await cargarDesdeNube();
 
         if (datosNube) {
-            // Sincronización Exitosa
             listaViajes = datosNube.viajes || [];
             listaGastos = datosNube.gastos || [];
             localStorage.setItem(STORAGE_KEY, JSON.stringify(listaViajes));
@@ -132,18 +130,16 @@ async function initData() {
                 toast: true,
                 position: 'top-end',
                 icon: 'success',
-                title: 'Datos sincronizados',
+                title: 'Sincronizado con éxito',
                 showConfirmButton: false,
                 timer: 2000
             });
         } else {
-            // Falló la red o el servidor (pero no fue 401)
-            throw new Error("No se pudo obtener respuesta de la nube");
+            throw new Error("No se pudo obtener respuesta del servidor.");
         }
     } catch (error) {
-        console.warn("Fallo en sincronización inicial:", error);
+        console.warn("Fallo en sincronización:", error);
 
-        // Cargar lo que haya en LocalStorage como fallback
         const datosGuardados = localStorage.getItem(STORAGE_KEY);
         const gastosGuardados = localStorage.getItem(STORAGE_KEY_GASTOS);
 
@@ -153,21 +149,12 @@ async function initData() {
 
             Swal.fire({
                 icon: 'warning',
-                title: 'Modo Offline',
-                text: 'No pudimos conectar con la nube. Se están usando los datos guardados en este dispositivo.',
+                title: 'Modo Local Activado',
+                text: 'Hubo un problema al sincronizar: ' + (error.message || 'Error de red') + '. Se están usando los datos guardados en este dispositivo.',
                 confirmButtonText: 'Entendido'
             });
-        } else {
-            listaViajes = [];
-            listaGastos = [];
-            Swal.fire({
-                icon: 'info',
-                title: 'Sin datos',
-                text: 'No hay datos en la nube ni en este dispositivo.',
-                timer: 3000
-            });
         }
-        isDataLoaded = true; // Permitimos usar la app en modo local
+        isDataLoaded = true;
     } finally {
         Swal.close();
         finishInit();
@@ -814,33 +801,25 @@ async function guardarEnNube() {
         });
 
         if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            const msg = errorData.error || errorData.message || ('Error ' + res.status);
+
             if (res.status === 401) {
-                console.error("Sesión expirada");
-                Swal.fire({
-                    toast: true,
-                    position: 'top-end',
-                    icon: 'error',
-                    title: 'Sesión expirada. Por favor, vuelve a ingresar.',
-                    showConfirmButton: false,
-                    timer: 3000
-                });
+                Swal.fire({ icon: 'error', title: 'Sesión expirada' });
                 logout();
             } else {
-                throw new Error("Error en sincronización: " + res.status);
+                throw new Error(msg);
             }
-        } else {
-            console.log("Sincronizado correctamente");
-            // Opcional: Toast de éxito muy sutil
         }
     } catch (e) {
         console.error("Fallo guardarEnNube:", e);
         Swal.fire({
             toast: true,
             position: 'top-end',
-            icon: 'warning',
-            title: 'Error de conexión. Se guardó localmente.',
+            icon: 'error',
+            title: 'Nube: ' + e.message,
             showConfirmButton: false,
-            timer: 2000
+            timer: 4000
         });
     } finally {
         isSyncing = false;
@@ -851,9 +830,8 @@ async function cargarDesdeNube() {
     const token = localStorage.getItem(AUTH_TOKEN_KEY);
     if (!token) return null;
 
-    // Controlador de tiempo de espera (15 segundos)
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    const timeoutId = setTimeout(() => controller.abort(), 25000); // 25s timeout for init
 
     try {
         const r = await fetch('/api/sync', {
@@ -865,23 +843,18 @@ async function cargarDesdeNube() {
 
         if (r.ok) {
             return await r.json();
-        } else if (r.status === 401) {
-            console.error("Token inválido al cargar");
-            logout();
-            return null;
         } else {
-            console.error("Error API Sync status:", r.status);
-            return null;
+            const errorData = await r.json().catch(() => ({}));
+            if (r.status === 401) {
+                logout();
+                return null;
+            }
+            throw new Error(errorData.error || `Servidor: ${r.status}`);
         }
     } catch (e) {
         clearTimeout(timeoutId);
-        if (e.name === 'AbortError') {
-            console.error("Tiempo de espera agotado al cargar desde nube (15s)");
-        } else {
-            console.error("Error cargando desde nube:", e);
-        }
+        throw e;
     }
-    return null;
 }
 
 
