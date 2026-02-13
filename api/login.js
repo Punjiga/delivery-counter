@@ -16,21 +16,23 @@ module.exports = async (req, res) => {
         return res.status(405).json({ error: 'Method Not Allowed' });
     }
 
-    // --- READ RAW JSON BODY (IMPORTANT FOR VERCEL) ---
-    let rawBody = "";
-    await new Promise(resolve => {
-        req.on("data", chunk => rawBody += chunk);
-        req.on("end", () => resolve());
-    });
-
-    let body = {};
-    try {
-        body = JSON.parse(rawBody || "{}");
-    } catch (err) {
-        return res.status(400).json({ error: "Invalid JSON" });
+    // --- READ JSON BODY (HANDLING VERCEL AUTO-PARSING) ---
+    let body = req.body;
+    if (!body || Object.keys(body).length === 0) {
+        let rawBody = "";
+        await new Promise(resolve => {
+            req.on("data", chunk => rawBody += chunk);
+            req.on("end", () => resolve());
+        });
+        try {
+            body = JSON.parse(rawBody || "{}");
+        } catch (err) {
+            return res.status(400).json({ error: "Invalid JSON" });
+        }
     }
 
     const { username, password } = body;
+
 
     if (!password) {
         return res.status(400).json({ error: "Missing password" });

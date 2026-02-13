@@ -22,7 +22,7 @@ module.exports = async (req, res) => {
         const secret = process.env.JWT_SECRET || 'default_secret';
         jwt.verify(token, secret);
     } catch (e) {
-        return res.status(401).json({ error: 'Token inválido' });
+        return res.status(401).json({ error: 'Token inválido o expirado' });
     }
 
     // Variables de entorno de JSONBin
@@ -30,7 +30,7 @@ module.exports = async (req, res) => {
     const JSONBIN_BIN_ID = process.env.JSONBIN_BIN_ID;
 
     if (!JSONBIN_API_KEY || !JSONBIN_BIN_ID) {
-        return res.status(500).json({ error: 'Configuración de JSONBin faltante' });
+        return res.status(500).json({ error: 'Configuración de JSONBin faltante en el servidor' });
     }
 
     const binUrl = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
@@ -41,16 +41,16 @@ module.exports = async (req, res) => {
             const response = await fetch(binUrl, {
                 method: 'GET',
                 headers: {
-                    'X-Access-Key': JSONBIN_API_KEY
+                    'X-Master-Key': JSONBIN_API_KEY
                 }
             });
 
             if (!response.ok) {
-                throw new Error('Error al leer desde JSONBin');
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Error al leer desde JSONBin');
             }
 
             const data = await response.json();
-            // JSONBin retorna { record: {...}, metadata: {...} }
             return res.status(200).json(data.record);
         } catch (error) {
             return res.status(500).json({ error: error.message });
@@ -60,31 +60,33 @@ module.exports = async (req, res) => {
     // POST: Guardar datos en JSONBin
     if (req.method === 'POST') {
         try {
-            // Leer body
-            let rawBody = '';
-            await new Promise(resolve => {
-                req.on('data', chunk => rawBody += chunk);
-                req.on('end', () => resolve());
-            });
-
-            let body = {};
-            try {
-                body = JSON.parse(rawBody || '{}');
-            } catch (err) {
-                return res.status(400).json({ error: 'JSON inválido' });
+            // Manejar body (Vercel puede ya haberlo parseado)
+            let body = req.body;
+            if (!body || Object.keys(body).length === 0) {
+                let rawBody = '';
+                await new Promise(resolve => {
+                    req.on('data', chunk => rawBody += chunk);
+                    req.on('end', () => resolve());
+                });
+                try {
+                    body = JSON.parse(rawBody || '{}');
+                } catch (err) {
+                    return res.status(400).json({ error: 'JSON inválido' });
+                }
             }
 
             const response = await fetch(binUrl, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-Access-Key': JSONBIN_API_KEY
+                    'X-Master-Key': JSONBIN_API_KEY
                 },
                 body: JSON.stringify(body)
             });
 
             if (!response.ok) {
-                throw new Error('Error al escribir en JSONBin');
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Error al escribir en JSONBin');
             }
 
             const data = await response.json();
@@ -96,3 +98,4 @@ module.exports = async (req, res) => {
 
     return res.status(405).json({ error: 'Método no permitido' });
 };
+

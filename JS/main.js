@@ -16,6 +16,8 @@ const PRESET_KEY = 'delivery_date_preset';
 // AUTH STATE
 let isGuest = false;
 let isLoggedIn = false;
+let isDataLoaded = false; // Flag to prevent saving before loading
+let isSyncing = false;   // Flag to prevent concurrent syncs
 const AUTH_TOKEN_KEY = 'delivery_auth_token';
 
 // --- HELPERS DE FECHA ---
@@ -104,14 +106,24 @@ async function initData() {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(listaViajes));
             localStorage.setItem(STORAGE_KEY_GASTOS, JSON.stringify(listaGastos));
         } else {
+            // Si falla la carga de nube, avisar al usuario si es una instalación limpia
             const datosGuardados = localStorage.getItem(STORAGE_KEY);
-            if (datosGuardados) listaViajes = JSON.parse(datosGuardados);
+            if (datosGuardados) {
+                listaViajes = JSON.parse(datosGuardados);
+                // Si llegamos aquí, avisar que estamos usando datos locales
+                console.warn("Usando datos locales por fallo en sincronización");
+            } else {
+                listaViajes = [];
+            }
             const gastosGuardados = localStorage.getItem(STORAGE_KEY_GASTOS);
             if (gastosGuardados) listaGastos = JSON.parse(gastosGuardados);
+            else listaGastos = [];
         }
+        isDataLoaded = true; // Marcamos como cargado (incluso si falló, ya decidimos qué usar)
     } else {
         listaViajes = [];
         listaGastos = [];
+        isDataLoaded = true;
     }
 
     // Restaurar Preset o Default
@@ -561,9 +573,14 @@ function guardar() {
     if (!isGuest) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(listaViajes));
         localStorage.setItem(STORAGE_KEY_GASTOS, JSON.stringify(listaGastos));
-        guardarEnNube();
+
+        // SOLO guardar en nube si ya terminamos de cargar (para evitar borrar lo que hay con una lista vacía)
+        if (isDataLoaded) {
+            guardarEnNube();
+        } else {
+            console.warn("Guardado en nube omitido: la carga inicial aún no ha terminado.");
+        }
     }
-    // calcularTotales ya se llama en las funciones de actualizar
 }
 
 // --- TOTALES ---
@@ -726,32 +743,87 @@ function sanitizarFechasUI() {
 // Re-adding the sync/auth specific chunks if skipped.
 
 async function guardarEnNube() {
+    if (isGuest || !isDataLoaded || isSyncing) return;
+
     const token = localStorage.getItem(AUTH_TOKEN_KEY);
     if (!token) return;
+
+    isSyncing = true;
     try {
-        await fetch('/api/sync', {
+        const res = await fetch('/api/sync', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ viajes: listaViajes, gastos: listaGastos, ultimaActualizacion: new Date().toISOString() })
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                viajes: listaViajes,
+                gastos: listaGastos,
+                ultimaActualizacion: new Date().toISOString()
+            })
         });
-    } catch (e) { console.error(e); }
+
+        if (!res.ok) {
+            if (res.status === 401) {
+                console.error("Sesión expirada");
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'error',
+                    title: 'Sesión expirada. Por favor, vuelve a ingresar.',
+                    showConfirmButton: false,
+                    timer: 3000
+                });
+                logout();
+            } else {
+                throw new Error("Error en sincronización: " + res.status);
+            }
+        } else {
+            console.log("Sincronizado correctamente");
+            // Opcional: Toast de éxito muy sutil
+        }
+    } catch (e) {
+        console.error("Fallo guardarEnNube:", e);
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'warning',
+            title: 'Error de conexión. Se guardó localmente.',
+            showConfirmButton: false,
+            timer: 2000
+        });
+    } finally {
+        isSyncing = false;
+    }
 }
 
 async function cargarDesdeNube() {
     const token = localStorage.getItem(AUTH_TOKEN_KEY);
     if (!token) return null;
+
     try {
-        const r = await fetch('/api/sync', { headers: { 'Authorization': `Bearer ${token}` } });
-        if (r.ok) return await r.json();
-    } catch (e) { return null; }
+        const r = await fetch('/api/sync', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (r.ok) {
+            return await r.json();
+        } else if (r.status === 401) {
+            console.error("Token inválido al cargar");
+            logout();
+        }
+    } catch (e) {
+        console.error("Error cargando desde nube:", e);
+    }
     return null;
 }
 
-function checkAuth() {
+async function checkAuth() {
     const token = localStorage.getItem(AUTH_TOKEN_KEY);
     if (!token) { showLoginOverlay(); return; }
-    // Decode check exp... omitted for brevity but should be there. 
-    // Assuming simple check:
+
+    // Validar token brevemente intentando cargar (o con un endpoint de validación)
+    // Para ser rápidos, asumimos que es válido pero si la primera carga falla con 401, el logout ocurre allí.
     isLoggedIn = true;
     unlockApp();
 }
