@@ -154,30 +154,40 @@ async function initData() {
     }
 
     const mensajitos = [
-        "Conectando con la nube...",
-        "Buscando tus datos...",
         "Ya casi...",
         "Falta poco...",
         "Solo un poco más...",
-        "Preparando todo para ti...",
-        "Casi listo..."
+        "Preparando todo...",
+        "Casi listo...",
+        "Afinando detalles..."
     ];
     let msgIndex = 0;
 
     Swal.fire({
         title: 'Sincronizando...',
-        text: mensajitos[0],
+        html: `
+            <div id="sync-msg" style="margin-bottom: 10px;">Conectando con la nube...</div>
+            <div style="width: 100%; background: rgba(0,0,0,0.1); border-radius: 10px; height: 10px; overflow: hidden;">
+                <div id="sync-bar" style="width: 5%; height: 100%; background: var(--color-primario, #3b82f6); transition: width 0.5s ease;"></div>
+            </div>
+        `,
         allowOutsideClick: false,
         didOpen: () => {
             Swal.showLoading();
-            // Cambiar mensajito cada 3 segundos para que la espera sea amena
+            let progreso = 5;
             window.syncMsgInterval = setInterval(() => {
                 msgIndex = (msgIndex + 1) % mensajitos.length;
-                const textEl = Swal.getHtmlContainer();
+                const textEl = document.getElementById('sync-msg');
+                const barEl = document.getElementById('sync-bar');
                 if (textEl) textEl.innerText = mensajitos[msgIndex];
-            }, 3000);
+                if (barEl && progreso < 90) {
+                    progreso += 15;
+                    barEl.style.width = progreso + '%';
+                }
+            }, 2500);
         }
     });
+
 
     try {
         const datosNube = await cargarDesdeNube();
