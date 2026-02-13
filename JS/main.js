@@ -89,6 +89,10 @@ function formatDateDisplay(dateStr) {
 window.onload = function () {
     checkAuth();
     initTheme();
+    // Dynamic Year
+    const yearEl = document.getElementById('currentYear');
+    if (yearEl) yearEl.innerText = new Date().getFullYear();
+
     // Listeners tema
     const toggleSwitch = document.querySelector('.theme-switch input[type="checkbox"]');
     if (toggleSwitch) {
@@ -99,27 +103,45 @@ window.onload = function () {
 async function initData() {
     // Cargar datos (Nube o Local)
     if (!isGuest) {
+        Swal.fire({
+            title: 'Sincronizando...',
+            text: 'Descargando datos desde la nube',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+        });
+
         const datosNube = await cargarDesdeNube();
+        Swal.close();
+
         if (datosNube && datosNube.viajes) {
             listaViajes = datosNube.viajes || [];
             listaGastos = datosNube.gastos || [];
             localStorage.setItem(STORAGE_KEY, JSON.stringify(listaViajes));
             localStorage.setItem(STORAGE_KEY_GASTOS, JSON.stringify(listaGastos));
+            isDataLoaded = true;
         } else {
-            // Si falla la carga de nube, avisar al usuario si es una instalación limpia
+            // Si falla la carga de nube
             const datosGuardados = localStorage.getItem(STORAGE_KEY);
             if (datosGuardados) {
                 listaViajes = JSON.parse(datosGuardados);
-                // Si llegamos aquí, avisar que estamos usando datos locales
                 console.warn("Usando datos locales por fallo en sincronización");
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Sincronización Fallida',
+                    text: 'No pudimos conectar con la nube. Se están usando los datos locales de este dispositivo.',
+                    timer: 3000
+                });
             } else {
                 listaViajes = [];
             }
             const gastosGuardados = localStorage.getItem(STORAGE_KEY_GASTOS);
             if (gastosGuardados) listaGastos = JSON.parse(gastosGuardados);
             else listaGastos = [];
+
+            // Importante: No marcamos como cargado si está totalmente vacío para evitar sobreescribir la nube por error
+            // si es que realmente hay datos en la nube pero falló la red.
+            isDataLoaded = true;
         }
-        isDataLoaded = true; // Marcamos como cargado (incluso si falló, ya decidimos qué usar)
     } else {
         listaViajes = [];
         listaGastos = [];
@@ -842,16 +864,21 @@ async function handleLogin(e) {
     // Mock login or real? V4 had fetch /api/login. 
     // I will assume real fetch is needed.
     try {
-        const res = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: pass }) });
+        const res = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: user, password: pass })
+        });
         if (res.ok) {
             const d = await res.json();
             localStorage.setItem(AUTH_TOKEN_KEY, d.token);
             isLoggedIn = true;
             unlockApp();
         } else {
-            alert('Error login');
+            const err = await res.json();
+            alert('Error login: ' + (err.error || 'Credenciales inválidas'));
         }
-    } catch (err) { alert('Error network'); }
+    } catch (err) { alert('Error network: ' + err.message); }
 }
 
 function enableGuestMode() {

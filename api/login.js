@@ -18,21 +18,22 @@ module.exports = async (req, res) => {
 
     // --- READ JSON BODY (HANDLING VERCEL AUTO-PARSING) ---
     let body = req.body;
-    if (!body || Object.keys(body).length === 0) {
+    if (!body || (typeof body === 'object' && Object.keys(body).length === 0)) {
         let rawBody = "";
         await new Promise(resolve => {
             req.on("data", chunk => rawBody += chunk);
             req.on("end", () => resolve());
         });
-        try {
-            body = JSON.parse(rawBody || "{}");
-        } catch (err) {
-            return res.status(400).json({ error: "Invalid JSON" });
+        if (rawBody) {
+            try {
+                body = JSON.parse(rawBody);
+            } catch (err) {
+                return res.status(400).json({ error: "Invalid JSON body" });
+            }
         }
     }
 
-    const { username, password } = body;
-
+    const { username, password } = body || {};
 
     if (!password) {
         return res.status(400).json({ error: "Missing password" });
@@ -40,7 +41,7 @@ module.exports = async (req, res) => {
 
     const validHash = process.env.AUTH_PASSWORD_HASH;
     if (!validHash) {
-        return res.status(500).json({ error: 'Missing AUTH_PASSWORD_HASH' });
+        return res.status(500).json({ error: 'Error interno: AUTH_PASSWORD_HASH no configurado' });
     }
 
     // Hash the received password
@@ -48,7 +49,7 @@ module.exports = async (req, res) => {
 
     if (inputHash === validHash) {
         const secret = process.env.JWT_SECRET || 'default_secret';
-        const token = jwt.sign({ user: username || "user" }, secret, { expiresIn: '7d' });
+        const token = jwt.sign({ user: username || "punjiga" }, secret, { expiresIn: '7d' });
         return res.status(200).json({ token });
     } else {
         return res.status(401).json({ error: 'Contraseña incorrecta' });
