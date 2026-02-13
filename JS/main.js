@@ -98,7 +98,51 @@ window.onload = function () {
     if (toggleSwitch) {
         toggleSwitch.addEventListener('change', switchTheme, false);
     }
+
+    // AUTO-SYNC al volver a la pestaña (foco)
+    window.addEventListener('focus', () => {
+        if (isLoggedIn && !isGuest && isDataLoaded && !isSyncing) {
+            console.log("Detectado foco: Verificando actualizaciones en nube...");
+            sincronizarFondo();
+        }
+    });
 };
+
+async function sincronizarFondo() {
+    if (isSyncing) return;
+    try {
+        const datosNube = await cargarDesdeNube();
+        if (datosNube) {
+            // Comparar si hay cambios reales para no refrescar la UI innecesariamente
+            const nV = JSON.stringify(datosNube.viajes || []);
+            const nG = JSON.stringify(datosNube.gastos || []);
+            const lV = JSON.stringify(listaViajes);
+            const lG = JSON.stringify(listaGastos);
+
+            if (nV !== lV || nG !== lG) {
+                console.log("Cambios detectados en la nube. Actualizando vista...");
+                listaViajes = datosNube.viajes || [];
+                listaGastos = datosNube.gastos || [];
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(listaViajes));
+                localStorage.setItem(STORAGE_KEY_GASTOS, JSON.stringify(listaGastos));
+
+                actualizarSelectorDias();
+                actualizarVista();
+
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'info',
+                    title: 'Datos actualizados desde la nube',
+                    showConfirmButton: false,
+                    timer: 2000
+                });
+            }
+        }
+    } catch (e) {
+        console.warn("Fallo sincronización de fondo:", e);
+    }
+}
 
 async function initData() {
     if (isGuest) {
@@ -109,11 +153,30 @@ async function initData() {
         return;
     }
 
+    const mensajitos = [
+        "Conectando con la nube...",
+        "Buscando tus datos...",
+        "Ya casi...",
+        "Falta poco...",
+        "Solo un poco más...",
+        "Preparando todo para ti...",
+        "Casi listo..."
+    ];
+    let msgIndex = 0;
+
     Swal.fire({
         title: 'Sincronizando...',
-        text: 'Obteniendo datos de la nube...',
+        text: mensajitos[0],
         allowOutsideClick: false,
-        didOpen: () => { Swal.showLoading(); }
+        didOpen: () => {
+            Swal.showLoading();
+            // Cambiar mensajito cada 3 segundos para que la espera sea amena
+            window.syncMsgInterval = setInterval(() => {
+                msgIndex = (msgIndex + 1) % mensajitos.length;
+                const textEl = Swal.getHtmlContainer();
+                if (textEl) textEl.innerText = mensajitos[msgIndex];
+            }, 3000);
+        }
     });
 
     try {
@@ -134,6 +197,7 @@ async function initData() {
                 showConfirmButton: false,
                 timer: 2000
             });
+
         } else {
             throw new Error("No se pudo obtener respuesta del servidor.");
         }
@@ -156,6 +220,7 @@ async function initData() {
         }
         isDataLoaded = true;
     } finally {
+        if (window.syncMsgInterval) clearInterval(window.syncMsgInterval);
         Swal.close();
         finishInit();
     }
