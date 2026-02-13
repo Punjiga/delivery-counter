@@ -22,63 +22,64 @@ module.exports = async (req, res) => {
         const secret = process.env.JWT_SECRET || 'default_secret';
         jwt.verify(token, secret);
     } catch (e) {
-        return res.status(401).json({ error: 'Sesión expirada o token inválido. Por favor, inicia sesión de nuevo.' });
+        return res.status(401).json({ error: 'Sesión expirada o token inválido.' });
     }
 
-    // Variables de entorno de JSONBin
     const JSONBIN_API_KEY = process.env.JSONBIN_API_KEY;
     const JSONBIN_BIN_ID = process.env.JSONBIN_BIN_ID;
 
     if (!JSONBIN_API_KEY || !JSONBIN_BIN_ID) {
-        console.error("Faltan variables de entorno: ", { hasKey: !!JSONBIN_API_KEY, hasBinId: !!JSONBIN_BIN_ID });
-        return res.status(500).json({ error: 'Error de configuración en el servidor (Env Vars missing)' });
+        return res.status(500).json({ error: 'Falta configuración en el servidor.' });
     }
 
     const binUrl = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
 
-    // GET: Leer datos desde JSONBin
+    // Helper para fetch con timeout (8 segundos para JSONBin)
+    const fetchWithTimeout = async (url, options = {}) => {
+        const controller = new AbortController();
+        const id = setTimeout(() => controller.abort(), 8000);
+        try {
+            const response = await fetch(url, { ...options, signal: controller.signal });
+            clearTimeout(id);
+            return response;
+        } catch (e) {
+            clearTimeout(id);
+            throw e;
+        }
+    };
+
+    // GET: Leer datos
     if (req.method === 'GET') {
         try {
             const fetchUrl = `${binUrl}?timestamp=${Date.now()}`;
-            console.log(`Intentando GET a ${fetchUrl}`);
-
-            let response = await fetch(fetchUrl, {
+            let response = await fetchWithTimeout(fetchUrl, {
                 method: 'GET',
-                headers: {
-                    'X-Master-Key': JSONBIN_API_KEY,
-                    'X-Bin-Meta': 'false'
-                }
+                headers: { 'X-Master-Key': JSONBIN_API_KEY, 'X-Bin-Meta': 'false' }
             });
 
             if (!response.ok) {
-                console.warn(`GET con Master Key falló (${response.status}). Reintentando con Access Key...`);
-                response = await fetch(fetchUrl, {
+                response = await fetchWithTimeout(fetchUrl, {
                     method: 'GET',
-                    headers: {
-                        'X-Access-Key': JSONBIN_API_KEY,
-                        'X-Bin-Meta': 'false'
-                    }
+                    headers: { 'X-Access-Key': JSONBIN_API_KEY, 'X-Bin-Meta': 'false' }
                 });
             }
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                console.error("Error final en GET JSONBin:", errorData);
-                throw new Error(errorData.message || `Error status: ${response.status}`);
+                throw new Error(errorData.message || `JSONBin Error: ${response.status}`);
             }
 
             const data = await response.json();
             return res.status(200).json(data);
         } catch (error) {
-            console.error("Error fatal en GET sync:", error);
+            console.error("GET sync error:", error.name === 'AbortError' ? 'Timeout' : error.message);
             return res.status(500).json({ error: error.message });
         }
     }
 
-    // POST: Guardar datos en JSONBin
+    // POST: Guardar datos
     if (req.method === 'POST') {
         try {
-            // Manejar body de forma segura
             let body = req.body;
             if (!body || (typeof body === 'object' && Object.keys(body).length === 0)) {
                 let rawBody = '';
@@ -87,20 +88,15 @@ module.exports = async (req, res) => {
                     req.on('end', () => resolve());
                 });
                 if (rawBody) {
-                    try { body = JSON.parse(rawBody); } catch (e) {
-                        console.error("Error parseando body:", e);
-                    }
+                    try { body = JSON.parse(rawBody); } catch (e) { /* ignore */ }
                 }
             }
 
             if (!body || Object.keys(body).length === 0) {
-                return res.status(400).json({ error: 'No hay datos para guardar (Body vacío)' });
+                return res.status(400).json({ error: 'Body vacío' });
             }
 
-            console.log("Intentando guardar en JSONBin...");
-
-            // Intentamos guardar con Master Key
-            let response = await fetch(binUrl, {
+            let response = await fetchWithTimeout(binUrl, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -110,8 +106,7 @@ module.exports = async (req, res) => {
             });
 
             if (!response.ok) {
-                console.warn(`PUT con Master Key falló (${response.status}). Reintentando con Access Key...`);
-                response = await fetch(binUrl, {
+                response = await fetchWithTimeout(binUrl, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -123,14 +118,13 @@ module.exports = async (req, res) => {
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                console.error("Error final en PUT JSONBin:", errorData);
-                throw new Error(errorData.message || `Error status: ${response.status}`);
+                throw new Error(errorData.message || `JSONBin Error: ${response.status}`);
             }
 
             const data = await response.json();
             return res.status(200).json({ success: true, record: data.record || data });
         } catch (error) {
-            console.error("Error fatal en POST sync:", error);
+            console.error("POST sync error:", error.name === 'AbortError' ? 'Timeout' : error.message);
             return res.status(500).json({ error: error.message });
         }
     }
