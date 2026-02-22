@@ -84,6 +84,20 @@ function formatDateDisplay(dateStr) {
     return date.toLocaleDateString('es-ES', options);
 }
 
+// Calcula dinámicamente el label de fecha: "Hoy", "Ayer", o fecha formateada
+function getDateLabel(fechaStr) {
+    if (!fechaStr) return '';
+    const hoy = getLocalDateString(new Date());
+    const ayerDate = new Date(); ayerDate.setDate(ayerDate.getDate() - 1);
+    const ayer = getLocalDateString(ayerDate);
+    if (fechaStr === hoy) return 'Hoy';
+    if (fechaStr === ayer) return 'Ayer';
+    // Fecha formateada corta
+    const partes = fechaStr.split('-');
+    const d = new Date(partes[0], partes[1] - 1, partes[2]);
+    return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+}
+
 // --- INITIALIZATION ---
 
 window.onload = function () {
@@ -243,7 +257,6 @@ function finishInit() {
     if (presetSelect) presetSelect.value = savedPreset;
 
     handlePresetChange(savedPreset);
-    sanitizarFechasUI();
 }
 
 
@@ -385,26 +398,17 @@ function actualizarVista() {
             const nombreDia = d.toLocaleDateString('es-ES', { weekday: 'long' });
             const nombreDiaCap = nombreDia.charAt(0).toUpperCase() + nombreDia.slice(1);
 
-            // UI Fecha (Dropdown vs Custom)
-            const hideSelect = v.tipoFechaUI === 'custom' ? 'style="display:none"' : '';
-            const showInput = v.tipoFechaUI === 'custom' ? '' : 'style="display:none"';
+            // UI Fecha — label dinámico + input date para editar
+            const fechaLabel = getDateLabel(v.fecha);
 
             const htmlFecha = `
                 <div class="fecha-control-wrapper" style="display: flex; align-items: center; gap: 5px;">
-                    <select class="input-tabla selector-fecha-tipo" ${hideSelect} onchange="actualizarDato(${v.id}, 'tipoFechaUI', this.value)">
-                        <option value="hoy" ${v.tipoFechaUI === 'hoy' ? 'selected' : ''}>Hoy</option>
-                        <option value="ayer" ${v.tipoFechaUI === 'ayer' ? 'selected' : ''}>Ayer</option>
-                        <option value="custom" ${v.tipoFechaUI === 'custom' ? 'selected' : ''}>Elegir fecha...</option>
-                    </select>
-                    
+                    <span class="fecha-label" style="font-weight:600; min-width:50px;">${fechaLabel}</span>
                     <input type="date" class="input-tabla input-fecha-real" 
                         value="${v.fecha}" 
-                        ${showInput}
+                        style="max-width:140px;"
                         onchange="actualizarDato(${v.id}, 'fecha', this.value)"
                     >
-                    ${v.tipoFechaUI === 'custom' ?
-                    `<button class="btn-reset-date" onclick="actualizarDato(${v.id}, 'tipoFechaUI', 'hoy')" title="Volver a Hoy" style="background:none; border:none; cursor:pointer;">↺</button>`
-                    : ''}
                 </div>
             `;
 
@@ -524,22 +528,12 @@ function agregarViaje() {
         if (result.isConfirmed) {
             const data = result.value;
 
-            // Calcular fechaUI (hoy/ayer/custom)
-            const d = new Date(data.fecha + 'T00:00:00');
-            const hoy = new Date();
-            const ayer = new Date(); ayer.setDate(ayer.getDate() - 1);
-
-            let tipoFechaUI = 'custom';
-            if (d.toDateString() === hoy.toDateString()) tipoFechaUI = 'hoy';
-            else if (d.toDateString() === ayer.toDateString()) tipoFechaUI = 'ayer';
-
             const nuevo = {
                 id: Date.now(),
                 fecha: data.fecha,
                 cliente: data.cliente,
                 precio: parseFloat(data.precio),
-                km: parseFloat(data.km),
-                tipoFechaUI: tipoFechaUI
+                km: parseFloat(data.km)
             };
 
             listaViajes.push(nuevo);
@@ -632,35 +626,12 @@ window.actualizarDato = function (id, campo, valor) {
         viaje[campo] = valor;
     }
 
-    if (campo === 'tipoFechaUI') {
-        const hoy = new Date();
-        const ayer = new Date(); ayer.setDate(ayer.getDate() - 1);
-        if (valor === 'hoy') {
-            viaje.fecha = getLocalDateString(hoy);
-            viaje.tipoFechaUI = 'hoy';
-        } else if (valor === 'ayer') {
-            viaje.fecha = getLocalDateString(ayer);
-            viaje.tipoFechaUI = 'ayer';
-        } else if (valor === 'custom') {
-            viaje.tipoFechaUI = 'custom';
-        }
-        actualizarSelectorDias();
-        actualizarVista();
-    } else if (campo === 'fecha') {
-        // Recalcular tipoFechaUI basado en nueva fecha
-        const d = new Date(valor + 'T00:00:00');
-        const hoy = new Date();
-        const ayer = new Date(); ayer.setDate(ayer.getDate() - 1);
-
-        if (d.toDateString() === hoy.toDateString()) viaje.tipoFechaUI = 'hoy';
-        else if (d.toDateString() === ayer.toDateString()) viaje.tipoFechaUI = 'ayer';
-        else viaje.tipoFechaUI = 'custom';
-
+    if (campo === 'fecha') {
         actualizarSelectorDias();
         actualizarVista();
     } else {
         // Solo datos, no fecha
-        calcularTotales(listaViajes.filter(v => isDateInRange(v.fecha))); // Recalcular con filtro actual
+        calcularTotales(listaViajes.filter(v => isDateInRange(v.fecha)));
     }
     guardar();
 };
@@ -832,23 +803,7 @@ function generarPDF() {
 
 
 // --- DATA CLEANSING ---
-function sanitizarFechasUI() {
-    // Mismo método de V4
-    const hoyStr = new Date().toDateString();
-    const ayer = new Date(); ayer.setDate(ayer.getDate() - 1);
-    const ayerStr = ayer.toDateString();
-    let hubo = false;
-    listaViajes.forEach(v => {
-        if (v.tipoFechaUI === 'hoy') {
-            const d = new Date(v.fecha + 'T00:00:00').toDateString();
-            if (d !== hoyStr) { v.tipoFechaUI = (d === ayerStr) ? 'ayer' : 'custom'; hubo = true; }
-        } else if (v.tipoFechaUI === 'ayer') {
-            const d = new Date(v.fecha + 'T00:00:00').toDateString();
-            if (d !== ayerStr) { v.tipoFechaUI = 'custom'; hubo = true; }
-        }
-    });
-    if (hubo) localStorage.setItem(STORAGE_KEY, JSON.stringify(listaViajes));
-}
+// sanitizarFechasUI() ya no es necesaria: los labels se computan dinámicamente via getDateLabel().
 
 // --- AUTH & SYNC (COPIED AS IS, ESSENTIAL) ---
 // Note: functions checkAuth, handleLogin, save, etc are already above or integrated.
